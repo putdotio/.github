@@ -1,0 +1,146 @@
+name: Release npm package
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: >-
+          Runner label. npm trusted publishing supports GitHub-hosted runners
+          only.
+        type: string
+        required: false
+        default: "ubuntu-24.04"
+      ref:
+        description: Commit to release; defaults to the triggering commit.
+        type: string
+        required: false
+        default: ${{ github.sha }}
+      node-version-file:
+        type: string
+        required: false
+        default: ".node-version"
+      semantic-version:
+        description: semantic-release version to run.
+        type: string
+        required: false
+        default: "25.0.9"
+      extra-plugins:
+        description: >-
+          Newline-separated semantic-release plugins with exact versions. The
+          default covers analysis, notes, npm, package.json writeback, GitHub
+          Release, and the Conventional Commits preset.
+        type: string
+        required: false
+        default: |
+          @semantic-release/commit-analyzer@13.0.1
+          @semantic-release/release-notes-generator@14.1.1
+          @semantic-release/npm@13.1.5
+          @semantic-release/git@10.0.1
+          @semantic-release/github@12.0.8
+          conventional-changelog-conventionalcommits@9.3.1
+      build-command:
+        description: >-
+          Optional command run after install and before release, for packages
+          whose publish does not build itself through `prepack`.
+        type: string
+        required: false
+        default: ""
+      working-directory:
+        description: Directory for the build command.
+        type: string
+        required: false
+        default: "."
+    secrets:
+      PUTIO_RELEASE_BOT_PRIVATE_KEY:
+        description: >-
+          Private key of the putio-releaser App. Pass it by name; the value
+          that reaches this job is the caller's release Environment secret.
+        required: true
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 20
+    environment:
+      name: release
+      deployment: false
+    concurrency:
+      group: release-${{ github.repository }}-main
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+      - uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: false
+          run-install: |
+            - args: ["--frozen-lockfile"]
+      - name: Require an npm that can use trusted publishing
+        run: |
+          npm_version=$(npm --version)
+          if ! node -e 'const [a,b,c]=process.argv[1].split(".").map(Number); process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)' "$npm_version"; then
+            echo "npm $npm_version is older than 11.5.1; pick a Node release that bundles a newer npm" >&2
+            exit 1
+          fi
+      - name: Build the package
+        if: inputs.build-command != ''
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build-command }}
+        run: eval "$BUILD_COMMAND"
+      - name: Create release bot token
+        id: release-bot
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.PUTIO_RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.PUTIO_RELEASE_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+      - name: Resolve release bot identity
+        id: release-bot-identity
+        env:
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+          APP_SLUG: ${{ steps.release-bot.outputs.app-slug }}
+        run: |
+          user_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          if [[ ! "$user_id" =~ ^[0-9]+$ ]]; then
+            echo "failed to resolve numeric bot user id for ${APP_SLUG}[bot]" >&2
+            exit 1
+          fi
+          echo "user_id=${user_id}" >> "$GITHUB_OUTPUT"
+      - name: Authorize release writes
+        env:
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+        run: gh auth setup-git
+      - id: release
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        with:
+          semantic_version: ${{ inputs.semantic-version }}
+          extra_plugins: ${{ inputs.extra-plugins }}
+        env:
+          GITHUB_TOKEN: ${{ steps.release-bot.outputs.token }}
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+          NPM_CONFIG_PROVENANCE: "true"
+          GIT_AUTHOR_NAME: ${{ steps.release-bot.outputs.app-slug }}[bot]
+          GIT_AUTHOR_EMAIL: ${{ steps.release-bot-identity.outputs.user_id }}+${{ steps.release-bot.outputs.app-slug }}[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: ${{ steps.release-bot.outputs.app-slug }}[bot]
+          GIT_COMMITTER_EMAIL: ${{ steps.release-bot-identity.outputs.user_id }}+${{ steps.release-bot.outputs.app-slug }}[bot]@users.noreply.github.com
+      - name: Verify immutable release
+        if: steps.release.outputs.new_release_published == 'true'
+        env:
+          GH_TOKEN: ${{ steps.release-bot.outputs.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.new_release_git_tag }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq .immutable)" = true

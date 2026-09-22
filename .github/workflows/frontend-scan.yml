@@ -1,0 +1,118 @@
+name: Scan
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: >-
+          Runner label for every scan job. Private repositories may pass a
+          Blacksmith label; public repositories keep the GitHub-hosted default.
+        type: string
+        required: false
+        default: "ubuntu-24.04-arm"
+      zizmor-args:
+        description: Extra zizmor arguments for repositories with documented needs.
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Gitleaks
+    outputs:
+      workflows: ${{ steps.changes.outputs.workflows }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        if: github.event_name == 'pull_request'
+        id: changes
+        with:
+          script: |
+            const base = context.payload.pull_request.base.sha;
+            if (!/^[0-9a-f]{40}$/.test(base)) {
+              throw new Error('Invalid pull request base SHA');
+            }
+            const { stdout } = await exec.getExecOutput('git', [
+              'diff', '--name-only', '-z', '--no-renames', `${base}...HEAD`, '--',
+            ], { silent: true });
+            const workflows = stdout.split('\0').some(path =>
+              path.startsWith('.github/') ||
+              /(^|\/)(action\.ya?ml|\.?zizmor\.ya?ml|\.shellcheckrc)$/.test(path)
+            );
+            core.setOutput('workflows', String(workflows));
+      - name: Scan Git history
+        env:
+          LOG_OPTS: ${{ github.event_name == 'pull_request' && format('{0}..HEAD', github.event.pull_request.base.sha) || '--all' }}
+        run: |
+          set -eu
+          log="$(docker run --rm --network none -v "$PWD:/repo:ro" \
+            zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            detect --source /repo --log-opts="$LOG_OPTS" --redact --no-banner --log-level info 2>&1)" && status=0 || status=$?
+          printf '%s\n' "$log"
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          commits="$(printf '%s' "$log" | sed -n 's/.*[^0-9]\([0-9][0-9]*\) commits scanned.*/\1/p' | tail -1)"
+          if [ -z "${commits:-}" ] || [ "$commits" -eq 0 ]; then
+            echo "gitleaks scanned no commits" >&2
+            exit 1
+          fi
+
+  trufflehog:
+    name: TruffleHog
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Scan for verified secrets
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" \
+            trufflesecurity/trufflehog:3.97.5@sha256:1cec88f18ca39e26e04e61fe9d886c9c4e5f2fc0ba4f2ed185cac0722bd8a076 \
+            git file:///repo --no-update --fail --results=verified
+
+  actionlint:
+    name: Actionlint
+    needs: gitleaks
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.gitleaks.outputs.workflows != 'false') }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint workflows
+        run: |
+          docker run --rm -v "$PWD:/repo" --workdir /repo \
+            rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
+            -color
+
+  zizmor:
+    name: Zizmor
+    needs: gitleaks
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.gitleaks.outputs.workflows != 'false') }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Audit workflow security
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZIZMOR_EXTRA_ARGS: ${{ inputs.zizmor-args }}
+        run: |
+          # shellcheck disable=SC2086
+          docker run --rm -e GH_TOKEN -v "$PWD:/repo" \
+            ghcr.io/zizmorcore/zizmor:1.29.0@sha256:863026d54f91271b10b60b67ad8054cb37120167e162482597db102b3026a284 \
+            $ZIZMOR_EXTRA_ARGS /repo
