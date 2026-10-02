@@ -1,9 +1,12 @@
 # putdotio/.github
 
-Reusable GitHub Actions workflows for put.io repositories. Nothing here applies
-to a repository until it commits a caller; this repository carries no
-community-health fallbacks. Reusable workflows must live in
+Reusable GitHub Actions workflows for put.io repositories. A workflow applies
+to a repository only once it commits a caller. Reusable workflows must live in
 `.github/workflows/`, so each team's files carry its name as a prefix.
+
+The one community-health fallback is [`SECURITY.md`](SECURITY.md): GitHub
+shows it for every put.io repository, public or private, that has no
+`SECURITY.md` of its own.
 
 Every push to `main` with a releasable Conventional Commit tags a release
 ([`release.yml`](.github/workflows/release.yml)). Callers pin a workflow to
