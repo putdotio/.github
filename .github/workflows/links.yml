@@ -1,0 +1,19 @@
+name: Links
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: links-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/frontend-links.yml # zizmor: ignore[self-repository]
