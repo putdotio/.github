@@ -3,11 +3,12 @@ actionlint = "1.7.12"
 "pipx:zizmor" = "1.30.1"
 
 [tasks.verify]
-description = "Lint and audit the shared workflows"
-sources = [".github/**/*.yml"]
+description = "Lint and audit the shared workflows and check Markdown formatting"
+sources = [".github/**/*.yml", "**/*.md"]
 run = '''
 actionlint
 token="${GH_TOKEN:-$(gh auth token)}" || exit 1
 GH_TOKEN="$token" zizmor .github/workflows
+pnpm exec oxfmt --check '**/*.md'
 git diff --check
 '''

@@ -77,5 +77,8 @@ jobs:
     uses: putdotio/.github/.github/workflows/frontend-scan.yml@<commit> # v1.0.1
 ```
 
-`mise run verify` lints this repository; its own [scan caller](.github/workflows/scan.yml)
-runs the shared scan on pull requests.
+After `pnpm install`, `mise run verify` lints and audits the workflows and
+checks Markdown formatting with oxfmt; `pnpm exec oxfmt '**/*.md'` fixes
+findings. [Verify](.github/workflows/verify.yml) runs it on pull requests and
+`main`, and the [scan caller](.github/workflows/scan.yml) runs the shared scan
+on pull requests.
