@@ -13,3 +13,16 @@ updates:
         update-types: ["major"]
     commit-message:
       prefix: "ci"
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 1
+    groups:
+      npm-patch-minor:
+        update-types: ["patch", "minor"]
+      npm-major:
+        update-types: ["major"]
+    commit-message:
+      prefix: "build"
