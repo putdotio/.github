@@ -19,10 +19,12 @@ or changing a default that alters caller behavior ships as a major.
 Publishes an npm package with semantic-release and npm trusted publishing. The
 caller keeps its own verify job, workflow filename (npm's trusted publisher
 checks it), `.releaserc.json`, and `release` Environment with the variable
-`PUTIO_RELEASE_BOT_CLIENT_ID` and the secret `PUTIO_RELEASE_BOT_PRIVATE_KEY`.
+`PUTIO_CI_APP_CLIENT_ID` and the secret `PUTIO_CI_APP_PRIVATE_KEY`.
 The secret is passed by name; the shared job binds to the same Environment and
-reads the Environment's value. The default plugins write `package.json` back
-to `main` as `putio-releaser[bot]`, so that App stays a bypass actor on the
+reads the Environment's value. Existing callers can keep the legacy
+`PUTIO_RELEASE_BOT_PRIVATE_KEY` input and `PUTIO_RELEASE_BOT_CLIENT_ID`
+variable while moving to the new names. The default plugins write `package.json` back
+to `main` as `putio-ci[bot]`, so that App stays a bypass actor on the
 caller's default-branch ruleset. Vite+ resolves from the caller's
 `package.json` pin. npm trusted publishing supports GitHub-hosted runners only.
 
@@ -40,7 +42,7 @@ release:
     id-token: write
   uses: putdotio/.github/.github/workflows/frontend-release-npm.yml@<commit> # v1.0.1
   secrets:
-    PUTIO_RELEASE_BOT_PRIVATE_KEY: ${{ secrets.PUTIO_RELEASE_BOT_PRIVATE_KEY }}
+    PUTIO_CI_APP_PRIVATE_KEY: ${{ secrets.PUTIO_CI_APP_PRIVATE_KEY }}
 ```
 
 ## frontend-scan.yml

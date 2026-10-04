@@ -51,11 +51,14 @@ on:
         required: false
         default: "."
     secrets:
-      PUTIO_RELEASE_BOT_PRIVATE_KEY:
+      PUTIO_CI_APP_PRIVATE_KEY:
         description: >-
-          Private key of the putio-releaser App. Pass it by name; the value
+          Private key of the putio-ci App. Pass it by name; the value
           that reaches this job is the caller's release Environment secret.
-        required: true
+        required: false
+      PUTIO_RELEASE_BOT_PRIVATE_KEY:
+        description: Legacy name accepted for callers pinned before the putio-ci rename.
+        required: false
 
 permissions: {}
 
@@ -101,8 +104,8 @@ jobs:
         id: release-bot
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ vars.PUTIO_RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.PUTIO_RELEASE_BOT_PRIVATE_KEY }}
+          client-id: ${{ vars.PUTIO_CI_APP_CLIENT_ID || vars.PUTIO_RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.PUTIO_CI_APP_PRIVATE_KEY || secrets.PUTIO_RELEASE_BOT_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
