@@ -77,8 +77,42 @@ jobs:
     uses: putdotio/.github/.github/workflows/frontend-scan.yml@<commit> # v1.0.1
 ```
 
+## frontend-links.yml
+
+Checks relative links and heading anchors in tracked Markdown with lychee from
+a digest-pinned image. It runs offline with no network, so a result depends
+only on the commit; web links are not checked. Root-relative links resolve
+from the repository root. Untracked files and `node_modules/`, `vendor/`,
+`third_party/`, `Pods/`, and `Carthage/` are skipped; mark other vendored paths
+`linguist-vendored` in `.gitattributes`. A root `.lycheeignore` or
+`lychee.toml` adds exceptions. Input: `runner`, as in `frontend-scan.yml`. The
+image tag and digest are updated by hand.
+
+```yaml
+name: Links
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: links-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    permissions:
+      contents: read
+    uses: putdotio/.github/.github/workflows/frontend-links.yml@<commit> # v1.1.0
+```
+
 After `pnpm install`, `mise run verify` lints and audits the workflows and
 checks Markdown formatting with oxfmt; `pnpm exec oxfmt '**/*.md'` fixes
 findings. [Verify](.github/workflows/verify.yml) runs it on pull requests and
-`main`, and the [scan caller](.github/workflows/scan.yml) runs the shared scan
-on pull requests.
+`main`, and the [scan](.github/workflows/scan.yml) and
+[links](.github/workflows/links.yml) callers run the shared workflows on pull
+requests.
