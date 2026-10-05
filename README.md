@@ -97,10 +97,9 @@ commits unreleased until the next push.
   `contents: read`) until the previous head resolves. Zizmor's online audits
   use the same token.
 
-Linux runners use digest-pinned images. macOS runners install the scanners
-from Homebrew. Dependabot does not update images in `docker run` commands
-([caveats](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories#github-actions)),
-so image tags and digests are updated by hand.
+Linux runners pull digest-pinned images; macOS runners download
+sha256-pinned release binaries. [Pinned versions](#pinned-versions) lists
+where each pin lives.
 
 ## actions/links
 
@@ -117,8 +116,7 @@ links are not checked. Root-relative links resolve from the repository root.
 Untracked files and `node_modules/`, `vendor/`, `third_party/`, `Pods/`, and
 `Carthage/` are skipped; mark other vendored paths `linguist-vendored` in
 `.gitattributes`. A root `.lycheeignore` or `lychee.toml` adds exceptions.
-Linux runners use a digest-pinned image, updated by hand; macOS runners
-install lychee from Homebrew.
+lychee is pinned like the scanners ([Pinned versions](#pinned-versions)).
 
 Both are steps rather than workflows because a separate job pays its own
 runner start and checkout for seconds of work, and a pull-request scan repeats
@@ -129,6 +127,28 @@ reasoning and its sources are in gh-setup's
 [security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
 and
 [runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
+
+## Pinned versions
+
+Each tool runs at one version on every runner. Linux runners pull its image
+by digest. macOS runners download its release archive for the runner's
+architecture and check the archive's sha256 before running it. `mise.toml`
+pins the Actionlint and Zizmor that `mise run verify` runs locally and in CI.
+
+| Tool       | Pins                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml)                           |
+| Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
+| ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
+| Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
+| lychee     | [`actions/links`](.github/actions/links/action.yml), [`frontend-links.yml`](.github/workflows/frontend-links.yml)                       |
+
+Dependabot updates none of them
+([caveats](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories#github-actions)),
+so an upgrade moves every pin of the tool in one commit: the image tag and
+digest, and the release tag and each macOS asset's sha256
+(`gh release view <tag> -R <owner>/<repo> --json assets` lists them).
+`mise run verify` fails when one tool's pins name different versions.
 
 ## Deprecated: frontend-scan.yml and frontend-links.yml
 
@@ -141,8 +161,9 @@ delete the `Scan` and `Links` caller workflows and add
 [`actions/scan`](#actionsscan) and [`actions/links`](#actionslinks) to
 `verify`.
 
-After `pnpm install`, `mise run verify` lints and audits the workflows and
-actions and checks Markdown formatting with oxfmt; `pnpm exec oxfmt '**/*.md'`
+After `pnpm install`, `mise run verify` checks that each tool's pins agree,
+lints and audits the workflows and actions, and checks Markdown formatting
+with oxfmt; `pnpm exec oxfmt '**/*.md'`
 fixes findings. [Verify](.github/workflows/verify.yml) runs it on pull
 requests, `main`, and manual dispatch, then runs both actions from the same
 commit; `gitleaks: true` scans this repository's own pushes.

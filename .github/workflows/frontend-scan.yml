@@ -114,5 +114,5 @@ jobs:
         run: |
           # shellcheck disable=SC2086
           docker run --rm -e GH_TOKEN -v "$PWD:/repo" \
-            ghcr.io/zizmorcore/zizmor:1.29.0@sha256:863026d54f91271b10b60b67ad8054cb37120167e162482597db102b3026a284 \
+            ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101 \
             $ZIZMOR_EXTRA_ARGS /repo

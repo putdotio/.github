@@ -2,8 +2,23 @@
 actionlint = "1.7.12"
 "pipx:zizmor" = "1.30.1"
 
+[tasks.verify-pins]
+description = "Fail when one tool's pins name different versions"
+run = '''
+status=0
+for tool in gitleaks actionlint shellcheck zizmor lychee; do
+  pins="$(grep -noE "^\"?(pipx:)?$tool\"? = \"[^\"]+|/$tool[:@][^@ ']+" mise.toml .github/actions/*/action.yml .github/workflows/*.yml)" || continue
+  if [ "$(printf '%s\n' "$pins" | sed -E 's/.*[:@"]([a-z-]*v)?//' | sort -u | sed -n '$=')" -gt 1 ]; then
+    printf '%s pins disagree:\n%s\n' "$tool" "$pins" >&2
+    status=1
+  fi
+done
+exit "$status"
+'''
+
 [tasks.verify]
 description = "Lint and audit the shared workflows and check Markdown formatting"
+depends = ["verify-pins"]
 sources = [".github/**/*.yml", "**/*.md"]
 run = '''
 actionlint
