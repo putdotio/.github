@@ -53,16 +53,34 @@ release:
 as the last steps of the caller's existing `verify` job, after its checkout:
 
 ```yaml
-- if: ${{ !cancelled() }}
-  uses: putdotio/.github/.github/actions/scan@<commit> # vX.Y.Z
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    steps:
+      # checkout and the existing steps
+      - if: ${{ !cancelled() }}
+        uses: putdotio/.github/.github/actions/scan@<commit> # vX.Y.Z
 ```
 
 It scans on `push` and `workflow_dispatch` and passes through every other
 event, pull requests included, so the caller's `verify` workflow needs both
-triggers and concurrency that cancels pull-request runs only. `!cancelled()`
-keeps the scan running after an earlier step fails, so every pushed range is
-scanned. A finding fails the pushed commit's `verify` run, and GitHub's
-failed-run email is the notification.
+triggers. A concurrency group keeps one pending run and cancels it when a newer
+run arrives, so pull-request runs share a group per ref and every other run
+gets its own; a shared push group would cancel a queued push run and leave its
+range unscanned. `!cancelled()` keeps the scan running after an earlier step
+fails, so every pushed range is scanned. A finding fails the pushed commit's
+`verify` run, and GitHub's failed-run email is the notification.
+
+The per-run group no longer serializes release, publish, or deploy jobs in the
+same workflow, so each takes a job-level `release-${{ github.repository }}-main`
+group with `cancel-in-progress: false` and `queue: max` and checks out
+`github.sha`, as [`frontend-release-npm.yml`](#frontend-release-npmyml) does.
+Without `queue: max`, an older release whose verify finishes late replaces a
+newer pending one and then skips because `main` has moved on, leaving the newer
+commits unreleased until the next push.
 
 - Gitleaks scans the pushed range of private repositories. Public repositories
   rely on GitHub secret scanning and push protection; `gitleaks: true` scans

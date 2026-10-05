@@ -72,6 +72,7 @@ jobs:
     concurrency:
       group: release-${{ github.repository }}-main
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       id-token: write
