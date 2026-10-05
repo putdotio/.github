@@ -68,7 +68,14 @@ runs:
           actionlint="$("$GITHUB_ACTION_PATH/install.sh" actionlint \
             ARM64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_arm64.tar.gz' sha256:aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f \
             X64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_amd64.tar.gz' sha256:5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644)"
-          "$actionlint" -color -shellcheck="$shellcheck"
+          pyflakes="$RUNNER_TEMP/pyflakes"
+          git init -q "$pyflakes"
+          git -C "$pyflakes" fetch -q --depth 1 https://github.com/PyCQA/pyflakes 59ec4593efd4c69ce00fdb13c40fcf5f3212ab10 # 3.4.0
+          git -C "$pyflakes" checkout -q FETCH_HEAD
+          export PYTHONPATH="$pyflakes"
+          version="$(python3 "$pyflakes/bin/pyflakes" --version)"
+          echo "pyflakes: PyCQA/pyflakes $version, commit $(git -C "$pyflakes" rev-parse HEAD)" >&2
+          "$actionlint" -color -shellcheck="$shellcheck" -pyflakes="python3 '$pyflakes/bin/pyflakes'"
         fi
     - name: Audit workflows with Zizmor
       if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}
