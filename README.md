@@ -88,7 +88,7 @@ commits unreleased until the next push.
 - Actionlint and Zizmor run when the range changes `.github/`, action
   metadata, Zizmor configuration, or ShellCheck configuration. `zizmor-args`
   adds arguments for documented needs, such as `--no-online-audits`. A
-  repository on Blacksmith or other non-GitHub runner labels lists them in
+  repository on non-GitHub runner labels lists them in
   `.github/actionlint.yaml`.
 - Manual dispatch, a new branch, or a previous head that is not an ancestor
   scans full history and always lints. Dispatch once after a scanner upgrade.
@@ -96,10 +96,6 @@ commits unreleased until the next push.
   the action deepens it with `token` (default: the job token, which needs
   `contents: read`) until the previous head resolves. Zizmor's online audits
   use the same token.
-
-Linux runners pull digest-pinned images; macOS runners download
-sha256-pinned release binaries. [Pinned versions](#pinned-versions) lists
-where each pin lives.
 
 ## actions/links
 
@@ -157,6 +153,5 @@ pyflakes publishes no release archives, so its pin is the commit its tag names
 After `pnpm install`, `mise run verify` checks that each tool's pins agree,
 lints and audits the workflows and actions, and checks Markdown formatting
 with oxfmt; `pnpm exec oxfmt '**/*.md'`
-fixes findings. [Verify](.github/workflows/verify.yml) runs it on pull
-requests, `main`, and manual dispatch, then runs both actions from the same
-commit; `gitleaks: true` scans this repository's own pushes.
+fixes findings. CI runs it and both actions from the same commit
+([`verify.yml`](.github/workflows/verify.yml)).
