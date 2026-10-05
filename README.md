@@ -140,6 +140,7 @@ pins the Actionlint and Zizmor that `mise run verify` runs locally and in CI.
 | Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml)                           |
 | Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
 | ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
+| pyflakes   | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
 | Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
 | lychee     | [`actions/links`](.github/actions/links/action.yml), [`frontend-links.yml`](.github/workflows/frontend-links.yml)                       |
 
@@ -148,6 +149,8 @@ Dependabot updates none of them
 so an upgrade moves every pin of the tool in one commit: the image tag and
 digest, and the release tag and each macOS asset's sha256
 (`gh release view <tag> -R <owner>/<repo> --json assets` lists them).
+pyflakes publishes no release archives, so its pin is the commit its tag names
+(`git ls-remote https://github.com/PyCQA/pyflakes 'refs/tags/<tag>^{}'`).
 `mise run verify` fails when one tool's pins name different versions.
 
 ## Deprecated: frontend-scan.yml and frontend-links.yml
