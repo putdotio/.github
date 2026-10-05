@@ -48,8 +48,10 @@ runs:
             zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
             git /repo --log-opts="$LOG_OPTS" --redact --no-banner --verbose
         else
-          brew install --quiet gitleaks
-          gitleaks git . --log-opts="$LOG_OPTS" --redact --no-banner --verbose
+          gitleaks="$("$GITHUB_ACTION_PATH/install.sh" gitleaks \
+            ARM64 gitleaks/gitleaks@v8.30.1 'gitleaks_{version}_darwin_arm64.tar.gz' sha256:b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5 \
+            X64 gitleaks/gitleaks@v8.30.1 'gitleaks_{version}_darwin_x64.tar.gz' sha256:dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709)"
+          "$gitleaks" git . --log-opts="$LOG_OPTS" --redact --no-banner --verbose
         fi
     - name: Lint workflows with Actionlint
       if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}
@@ -60,8 +62,10 @@ runs:
             rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
             -color
         else
-          brew install --quiet actionlint
-          actionlint -color
+          actionlint="$("$GITHUB_ACTION_PATH/install.sh" actionlint \
+            ARM64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_arm64.tar.gz' sha256:aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f \
+            X64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_amd64.tar.gz' sha256:5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644)"
+          "$actionlint" -color
         fi
     - name: Audit workflows with Zizmor
       if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}
@@ -74,9 +78,11 @@ runs:
         # shellcheck disable=SC2086
         if [ "$RUNNER_OS" = Linux ]; then
           docker run --rm -e GH_TOKEN -v "$PWD:/repo:ro" \
-            ghcr.io/zizmorcore/zizmor:1.29.0@sha256:863026d54f91271b10b60b67ad8054cb37120167e162482597db102b3026a284 \
+            ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101 \
             $ZIZMOR_ARGS /repo
         else
-          brew install --quiet zizmor
-          zizmor $ZIZMOR_ARGS .
+          zizmor="$("$GITHUB_ACTION_PATH/install.sh" zizmor \
+            ARM64 zizmorcore/zizmor@v1.30.1 'zizmor-aarch64-apple-darwin.tar.gz' sha256:e28d22b087f9ebb8d99da6e740d348c930f559961c7c3f12badda54f882195a2 \
+            X64 zizmorcore/zizmor@v1.30.1 'zizmor-x86_64-apple-darwin.tar.gz' sha256:10e6b18b11ea07e515a16f0f0518c7b07527bc9977c1fd5698181ce7f3554202)"
+          "$zizmor" $ZIZMOR_ARGS .
         fi
