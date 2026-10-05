@@ -42,7 +42,7 @@ release:
   permissions:
     contents: read
     id-token: write
-  uses: putdotio/.github/.github/workflows/frontend-release-npm.yml@<commit> # v1.0.1
+  uses: putdotio/.github/.github/workflows/frontend-release-npm.yml@<commit> # vX.Y.Z
   secrets:
     PUTIO_CI_APP_PRIVATE_KEY: ${{ secrets.PUTIO_CI_APP_PRIVATE_KEY }}
 ```
@@ -122,8 +122,7 @@ Both are steps rather than workflows because a separate job pays its own
 runner start and checkout for seconds of work, and a pull-request scan repeats
 the push scan every merge gets. Public repositories already block
 provider-pattern secrets at push time, so Gitleaks scans private ones by
-default, with no TruffleHog or weekly schedule. The
-reasoning and its sources are in gh-setup's
+default. The reasoning and its sources are in gh-setup's
 [security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
 and
 [runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
