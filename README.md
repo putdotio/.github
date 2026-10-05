@@ -76,8 +76,11 @@ fails, so every pushed range is scanned. A finding fails the pushed commit's
 
 The per-run group no longer serializes release, publish, or deploy jobs in the
 same workflow, so each takes a job-level `release-${{ github.repository }}-main`
-group with `cancel-in-progress: false` and checks out `github.sha`, as
-[`frontend-release-npm.yml`](#frontend-release-npmyml) already does.
+group with `cancel-in-progress: false` and `queue: max` and checks out
+`github.sha`, as [`frontend-release-npm.yml`](#frontend-release-npmyml) does.
+Without `queue: max`, an older release whose verify finishes late replaces a
+newer pending one and then skips because `main` has moved on, leaving the newer
+commits unreleased until the next push.
 
 - Gitleaks scans the pushed range of private repositories. Public repositories
   rely on GitHub secret scanning and push protection; `gitleaks: true` scans
