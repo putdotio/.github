@@ -62,10 +62,13 @@ runs:
             rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
             -color
         else
+          shellcheck="$("$GITHUB_ACTION_PATH/install.sh" shellcheck \
+            ARM64 koalaman/shellcheck@v0.11.0 'shellcheck-v{version}.darwin.aarch64.tar.xz' sha256:56affdd8de5527894dca6dc3d7e0a99a873b0f004d7aabc30ae407d3f48b0a79 \
+            X64 koalaman/shellcheck@v0.11.0 'shellcheck-v{version}.darwin.x86_64.tar.xz' sha256:3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6)"
           actionlint="$("$GITHUB_ACTION_PATH/install.sh" actionlint \
             ARM64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_arm64.tar.gz' sha256:aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f \
             X64 rhysd/actionlint@v1.7.12 'actionlint_{version}_darwin_amd64.tar.gz' sha256:5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644)"
-          "$actionlint" -color
+          "$actionlint" -color -shellcheck="$shellcheck"
         fi
     - name: Audit workflows with Zizmor
       if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}

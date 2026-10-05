@@ -17,7 +17,7 @@ while [ "$#" -ge 4 ]; do
       echo "$tool: $asset does not match its pinned sha256" >&2
       exit 1
     fi
-    tar -xzf "$dir/$asset" -C "$dir"
+    tar -xf "$dir/$asset" -C "$dir"
     bin="$(find "$dir" -type f -name "$tool" -print -quit)"
     [ -x "$bin" ] || { echo "$tool: no executable in $asset" >&2; exit 1; }
     echo "$tool: $repo $tag $asset sha256 verified" >&2

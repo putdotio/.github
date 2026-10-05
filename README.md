@@ -139,6 +139,7 @@ pins the Actionlint and Zizmor that `mise run verify` runs locally and in CI.
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml)                           |
 | Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
+| ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
 | Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
 | lychee     | [`actions/links`](.github/actions/links/action.yml), [`frontend-links.yml`](.github/workflows/frontend-links.yml)                       |
 
