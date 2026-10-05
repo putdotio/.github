@@ -122,7 +122,7 @@ Both are steps rather than workflows because a separate job pays its own
 runner start and checkout for seconds of work, and a pull-request scan repeats
 the push scan every merge gets. Public repositories already block
 provider-pattern secrets at push time, so Gitleaks scans private ones by
-default, and the actions drop TruffleHog and the weekly schedule. The
+default, with no TruffleHog or weekly schedule. The
 reasoning and its sources are in gh-setup's
 [security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
 and
@@ -135,14 +135,14 @@ by digest. macOS runners download its release archive for the runner's
 architecture and check the archive's sha256 before running it. `mise.toml`
 pins the Actionlint and Zizmor that `mise run verify` runs locally and in CI.
 
-| Tool       | Pins                                                                                                                                    |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml)                           |
-| Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
-| ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
-| pyflakes   | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles                                 |
-| Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`frontend-scan.yml`](.github/workflows/frontend-scan.yml), [`mise.toml`](mise.toml) |
-| lychee     | [`actions/links`](.github/actions/links/action.yml), [`frontend-links.yml`](.github/workflows/frontend-links.yml)                       |
+| Tool       | Pins                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml)                                                       |
+| Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`mise.toml`](mise.toml)                             |
+| ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles |
+| pyflakes   | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles |
+| Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`mise.toml`](mise.toml)                             |
+| lychee     | [`actions/links`](.github/actions/links/action.yml)                                                     |
 
 Dependabot updates none of them
 ([caveats](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories#github-actions)),
@@ -153,16 +153,7 @@ pyflakes publishes no release archives, so its pin is the commit its tag names
 (`git ls-remote https://github.com/PyCQA/pyflakes 'refs/tags/<tag>^{}'`).
 `mise run verify` fails when one tool's pins name different versions.
 
-## Deprecated: frontend-scan.yml and frontend-links.yml
-
-[`frontend-scan.yml`](.github/workflows/frontend-scan.yml) (Gitleaks,
-TruffleHog, Actionlint, and Zizmor as separate jobs on pull requests and a
-weekly schedule) and [`frontend-links.yml`](.github/workflows/frontend-links.yml)
-(the lychee check as its own job) still work, with their `runner` and
-`zizmor-args` inputs, until the next major release removes them. To migrate,
-delete the `Scan` and `Links` caller workflows and add
-[`actions/scan`](#actionsscan) and [`actions/links`](#actionslinks) to
-`verify`.
+## Verify
 
 After `pnpm install`, `mise run verify` checks that each tool's pins agree,
 lints and audits the workflows and actions, and checks Markdown formatting
