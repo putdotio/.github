@@ -1,0 +1,82 @@
+name: Scan
+description: >-
+  Push-time secret and workflow scan, run as the last steps of a caller's
+  existing verify job. On push it scans the pushed range; on workflow_dispatch
+  it scans full history; every other event passes through. Gitleaks runs on
+  private repositories. Actionlint and Zizmor run when the range changes
+  workflows, action metadata, or their configuration.
+inputs:
+  gitleaks:
+    description: >-
+      auto scans private repositories only; true or false forces it.
+    required: false
+    default: auto
+  zizmor-args:
+    description: >-
+      Extra zizmor arguments for repositories with documented needs, e.g.
+      --no-online-audits when a workflow pins a private first-party action
+      whose tags the repository token cannot list.
+    required: false
+    default: ""
+  token:
+    description: >-
+      Token used to deepen the caller's credential-less checkout and for
+      Zizmor's online audits.
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - name: Select scan range
+      id: plan
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        BEFORE: ${{ github.event.before }}
+        PRIVATE: ${{ github.event.repository.private }}
+        GITLEAKS: ${{ inputs.gitleaks }}
+        TOKEN: ${{ inputs.token }}
+      run: '"$GITHUB_ACTION_PATH/plan.sh"'
+    - name: Scan secrets with Gitleaks
+      if: ${{ steps.plan.outputs.gitleaks == 'true' }}
+      shell: bash
+      env:
+        LOG_OPTS: ${{ steps.plan.outputs.log-opts }}
+      run: |
+        if [ "$RUNNER_OS" = Linux ]; then
+          docker run --rm --network none -v "$PWD:/repo:ro" \
+            zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git /repo --log-opts="$LOG_OPTS" --redact --no-banner --verbose
+        else
+          brew install --quiet gitleaks
+          gitleaks git . --log-opts="$LOG_OPTS" --redact --no-banner --verbose
+        fi
+    - name: Lint workflows with Actionlint
+      if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = Linux ]; then
+          docker run --rm --network none -v "$PWD:/repo:ro" --workdir /repo \
+            rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
+            -color
+        else
+          brew install --quiet actionlint
+          actionlint -color
+        fi
+    - name: Audit workflows with Zizmor
+      if: ${{ !cancelled() && steps.plan.outputs.workflows == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ZIZMOR_ARGS: ${{ inputs.zizmor-args }}
+      run: |
+        set -f
+        # shellcheck disable=SC2086
+        if [ "$RUNNER_OS" = Linux ]; then
+          docker run --rm -e GH_TOKEN -v "$PWD:/repo:ro" \
+            ghcr.io/zizmorcore/zizmor:1.29.0@sha256:863026d54f91271b10b60b67ad8054cb37120167e162482597db102b3026a284 \
+            $ZIZMOR_ARGS /repo
+        else
+          brew install --quiet zizmor
+          zizmor $ZIZMOR_ARGS .
+        fi

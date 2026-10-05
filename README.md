@@ -1,18 +1,20 @@
 # putdotio/.github
 
-Reusable GitHub Actions workflows for put.io repositories. A workflow applies
-to a repository only once it commits a caller. Reusable workflows must live in
-`.github/workflows/`, so each team's files carry its name as a prefix.
+Reusable GitHub Actions workflows and composite actions for put.io
+repositories. A workflow or action applies to a repository only once it
+commits a caller. Reusable workflows must live in `.github/workflows/`, so each
+team's workflows carry its name as a prefix; the actions in `.github/actions/`
+are team-neutral.
 
 The one community-health fallback is [`SECURITY.md`](SECURITY.md): GitHub
 shows it for every put.io repository, public or private, that has no
 `SECURITY.md` of its own.
 
 Every push to `main` with a releasable Conventional Commit tags a release
-([`release.yml`](.github/workflows/release.yml)). Callers pin a workflow to
-that release's commit with the tag as the version comment, and Dependabot
-moves the pin. Removing an input, adding a required input, renaming an output,
-or changing a default that alters caller behavior ships as a major.
+([`release.yml`](.github/workflows/release.yml)). Callers pin a workflow or
+action to that release's commit with the tag as the version comment, and
+Dependabot moves the pin. Removing an input, adding a required input, renaming
+an output, or changing a default that alters caller behavior ships as a major.
 
 ## frontend-release-npm.yml
 
@@ -45,74 +47,84 @@ release:
     PUTIO_CI_APP_PRIVATE_KEY: ${{ secrets.PUTIO_CI_APP_PRIVATE_KEY }}
 ```
 
-## frontend-scan.yml
+## actions/scan
 
-Gitleaks, TruffleHog, Actionlint, and Zizmor from digest-pinned images. Pull
-requests scan commits outside the base with Gitleaks and lint only when
-`.github/`, action metadata, or scanner configuration changed; weekly and
-manual runs scan full history and always lint. TruffleHog always scans full
-history. Inputs: `runner` (private repositories may pass a Blacksmith label,
-which also needs `.github/actionlint.yaml`) and `zizmor-args`. Scanner image
-tags and digests are updated by hand.
+[`actions/scan`](.github/actions/scan/action.yml) scans secrets and workflows
+as the last steps of the caller's existing `verify` job, after its checkout:
 
 ```yaml
-name: Scan
-
-on:
-  pull_request:
-  schedule:
-    - cron: "41 6 * * 1"
-  workflow_dispatch:
-
-permissions: {}
-
-concurrency:
-  group: scan-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  scan:
-    permissions:
-      contents: read
-    uses: putdotio/.github/.github/workflows/frontend-scan.yml@<commit> # v1.0.1
+- if: ${{ !cancelled() }}
+  uses: putdotio/.github/.github/actions/scan@<commit> # vX.Y.Z
 ```
 
-## frontend-links.yml
+It scans on `push` and `workflow_dispatch` and passes through every other
+event, pull requests included, so the caller's `verify` workflow needs both
+triggers and concurrency that cancels pull-request runs only. `!cancelled()`
+keeps the scan running after an earlier step fails, so every pushed range is
+scanned. A finding fails the pushed commit's `verify` run, and GitHub's
+failed-run email is the notification.
 
-Checks relative links and heading anchors in tracked Markdown with lychee from
-a digest-pinned image. It runs offline with no network, so a result depends
-only on the commit; web links are not checked. Root-relative links resolve
-from the repository root. Untracked files and `node_modules/`, `vendor/`,
-`third_party/`, `Pods/`, and `Carthage/` are skipped; mark other vendored paths
-`linguist-vendored` in `.gitattributes`. A root `.lycheeignore` or
-`lychee.toml` adds exceptions. Input: `runner`, as in `frontend-scan.yml`. The
-image tag and digest are updated by hand.
+- Gitleaks scans the pushed range of private repositories. Public repositories
+  rely on GitHub secret scanning and push protection; `gitleaks: true` scans
+  them too.
+- Actionlint and Zizmor run when the range changes `.github/`, action
+  metadata, Zizmor configuration, or ShellCheck configuration. `zizmor-args`
+  adds arguments for documented needs, such as `--no-online-audits`. A
+  repository on Blacksmith or other non-GitHub runner labels lists them in
+  `.github/actionlint.yaml`.
+- Manual dispatch, a new branch, or a previous head that is not an ancestor
+  scans full history and always lints. Dispatch once after a scanner upgrade.
+- The default shallow checkout with `persist-credentials: false` is enough:
+  the action deepens it with `token` (default: the job token, which needs
+  `contents: read`) until the previous head resolves. Zizmor's online audits
+  use the same token.
+
+Linux runners use digest-pinned images. macOS runners install the scanners
+from Homebrew. Dependabot does not update images in `docker run` commands
+([caveats](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories#github-actions)),
+so image tags and digests are updated by hand.
+
+## actions/links
+
+[`actions/links`](.github/actions/links/action.yml) checks relative links and
+heading anchors in tracked Markdown with lychee, as a step of the caller's
+existing `verify` job on every event:
 
 ```yaml
-name: Links
-
-on:
-  pull_request:
-  push:
-    branches:
-      - main
-
-permissions: {}
-
-concurrency:
-  group: links-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  links:
-    permissions:
-      contents: read
-    uses: putdotio/.github/.github/workflows/frontend-links.yml@<commit> # v1.1.0
+- uses: putdotio/.github/.github/actions/links@<commit> # vX.Y.Z
 ```
+
+It runs offline with no network, so a result depends only on the commit; web
+links are not checked. Root-relative links resolve from the repository root.
+Untracked files and `node_modules/`, `vendor/`, `third_party/`, `Pods/`, and
+`Carthage/` are skipped; mark other vendored paths `linguist-vendored` in
+`.gitattributes`. A root `.lycheeignore` or `lychee.toml` adds exceptions.
+Linux runners use a digest-pinned image, updated by hand; macOS runners
+install lychee from Homebrew.
+
+Both are steps rather than workflows because a separate job pays its own
+runner start and checkout for seconds of work, and a pull-request scan repeats
+the push scan every merge gets. Public repositories already block
+provider-pattern secrets at push time, so Gitleaks scans private ones by
+default, and the actions drop TruffleHog and the weekly schedule. The
+reasoning and its sources are in gh-setup's
+[security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
+and
+[runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
+
+## Deprecated: frontend-scan.yml and frontend-links.yml
+
+[`frontend-scan.yml`](.github/workflows/frontend-scan.yml) (Gitleaks,
+TruffleHog, Actionlint, and Zizmor as separate jobs on pull requests and a
+weekly schedule) and [`frontend-links.yml`](.github/workflows/frontend-links.yml)
+(the lychee check as its own job) still work, with their `runner` and
+`zizmor-args` inputs, until the next major release removes them. To migrate,
+delete the `Scan` and `Links` caller workflows and add
+[`actions/scan`](#actionsscan) and [`actions/links`](#actionslinks) to
+`verify`.
 
 After `pnpm install`, `mise run verify` lints and audits the workflows and
-checks Markdown formatting with oxfmt; `pnpm exec oxfmt '**/*.md'` fixes
-findings. [Verify](.github/workflows/verify.yml) runs it on pull requests and
-`main`, and the [scan](.github/workflows/scan.yml) and
-[links](.github/workflows/links.yml) callers run the shared workflows on pull
-requests.
+actions and checks Markdown formatting with oxfmt; `pnpm exec oxfmt '**/*.md'`
+fixes findings. [Verify](.github/workflows/verify.yml) runs it on pull
+requests, `main`, and manual dispatch, then runs both actions from the same
+commit; `gitleaks: true` scans this repository's own pushes.

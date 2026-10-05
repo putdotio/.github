@@ -5,12 +5,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions: {}
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -38,3 +39,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: mise run verify
+      - uses: ./.github/actions/links # zizmor: ignore[self-repository]
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/scan # zizmor: ignore[self-repository]
+        with:
+          gitleaks: true
