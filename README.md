@@ -13,8 +13,25 @@ shows it for every put.io repository, public or private, that has no
 Every push to `main` with a releasable Conventional Commit tags a release
 ([`release.yml`](.github/workflows/release.yml)). Callers pin a workflow or
 action to that release's commit with the tag as the version comment, and
-Dependabot moves the pin. Removing an input, adding a required input, renaming
+Renovate moves the pin. Removing an input, adding a required input, renaming
 an output, or changing a default that alters caller behavior ships as a major.
+
+## Renovate
+
+[`renovate-config.json`](renovate-config.json) is the shared dependency-update
+policy. The Renovate app runs only where a repository commits a config:
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>putdotio/.github:renovate-config"]
+}
+```
+
+Updates run daily after a seven-day release age (one day for Actions and
+images). Patch and minor updates are grouped per manager and merged by
+Renovate once every check on the PR passes; majors wait for approval on the
+Dependency Dashboard issue.
 
 ## frontend-release-npm.yml
 

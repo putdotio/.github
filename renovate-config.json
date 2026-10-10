@@ -1,0 +1,99 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "put.io frontend Renovate policy: daily, seven-day release age, patch and minor grouped and automerged after checks, digest pinning.",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/Istanbul",
+  "schedule": ["* 0-5 * * *"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 10,
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Group patch and minor updates per manager; majors stay separate",
+      "matchUpdateTypes": ["patch", "minor", "pin"],
+      "groupName": "{{manager}} patch and minor"
+    },
+    {
+      "description": "Renovate merges grouped patch, minor, and pin updates itself once every check on the PR passes; majors and digest moves stay manual",
+      "matchUpdateTypes": ["patch", "minor", "pin", "pinDigest"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "GitHub Actions use the ci commit prefix",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci"
+    },
+    {
+      "description": "OpenTofu registry for providers and modules",
+      "matchDatasources": ["terraform-provider", "terraform-module"],
+      "registryUrls": ["https://registry.opentofu.org"]
+    },
+    {
+      "description": "required_version tracks OpenTofu releases, not Terraform",
+      "matchManagers": ["terraform"],
+      "matchDepNames": ["hashicorp/terraform"],
+      "enabled": false
+    },
+    {
+      "description": "Container images track upstream on a one-day gate: they are digest-pinned and every bump passes repository checks before it merges, so the three-day window mostly holds back fixes on daily-shipping images",
+      "matchDatasources": ["docker"],
+      "minimumReleaseAge": "1 day"
+    },
+    {
+      "description": "Actions are pinned to a commit digest; one day lets a newly published release settle before the pin moves",
+      "matchManagers": ["github-actions"],
+      "minimumReleaseAge": "1 day"
+    },
+    {
+      "description": "Runtime versions move as one PR across managers: the .python-version or node-version pin, the requires-python range, and the image tag fail checks when any one of them moves alone. One three-day gate for every member, after the one-day image and Actions rules, so the group never opens with only the members that aged first",
+      "matchDepNames": ["python", "node"],
+      "matchUpdateTypes": ["patch", "minor", "major"],
+      "groupName": "{{depName}} runtime",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Pin Actions and images by digest on the initial run without waiting for release age",
+      "matchUpdateTypes": ["pin", "pinDigest"],
+      "minimumReleaseAge": null,
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "First-party shared workflows and actions pin like any action; a release age adds nothing for a repository we own",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["putdotio/.github"],
+      "minimumReleaseAge": null,
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Digest moves stay manual in their own group and bypass release age because some datasources provide no timestamps",
+      "matchUpdateTypes": ["digest"],
+      "groupName": "{{manager}} digests",
+      "automerge": false,
+      "minimumReleaseAge": null
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Annotated YAML version variables: # renovate: datasource=X depName=Y [versioning=Z] [extractVersion=RE]",
+      "managerFilePatterns": ["/\\.ya?ml$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[a-z-]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?\\s+[\\w-]+:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "semanticCommitType": "deps",
+  "semanticCommitScope": null,
+  "automerge": false,
+  "platformAutomerge": false,
+  "automergeStrategy": "squash"
+}
