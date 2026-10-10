@@ -28,7 +28,7 @@ policy. The Renovate app runs only where a repository commits a config:
 }
 ```
 
-Updates run daily after a seven-day release age (one day for Actions and
+Updates run daily after a three-day release age (one day for Actions and
 images). Patch and minor updates are grouped per manager and merged by
 Renovate once every check on the PR passes; majors wait for approval on the
 Dependency Dashboard issue.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "put.io frontend Renovate policy: daily, seven-day release age, patch and minor grouped and automerged after checks, digest pinning.",
+  "description": "put.io frontend Renovate policy: daily, three-day release age, patch and minor grouped and automerged after checks, majors behind dashboard approval, digest pinning.",
   "extends": [
     "config:recommended",
     "docker:pinDigests",
@@ -78,6 +78,12 @@
       "groupName": "{{manager}} digests",
       "automerge": false,
       "minimumReleaseAge": null
+    },
+    {
+      "description": "Majors open only after approval on the Dependency Dashboard and always merge by hand",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false
     }
   ],
   "customManagers": [
