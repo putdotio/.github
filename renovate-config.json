@@ -61,6 +61,12 @@
       "minimumReleaseAge": "3 days"
     },
     {
+      "description": "vite-plus pins an exact vitest, and its coverage guard fails when @vitest/* differs. The toolchain moves in its own PR so a gap, such as vitest clearing release age before the vite-plus that bundles it, fails only this PR; it turns green once the matching vite-plus ages in",
+      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core", "vitest", "@vitest/*"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "vite-plus toolchain"
+    },
+    {
       "description": "Pin Actions and images by digest on the initial run without waiting for release age",
       "matchUpdateTypes": ["pin", "pinDigest"],
       "minimumReleaseAge": null,

@@ -31,7 +31,8 @@ policy. The Renovate app runs only where a repository commits a config:
 Updates run daily after a three-day release age (one day for Actions and
 images). Patch and minor updates are grouped per manager and merged by
 Renovate once every check on the PR passes; majors wait for approval on the
-Dependency Dashboard issue.
+Dependency Dashboard issue. `vite-plus`, `vitest`, and `@vitest/*` move in
+their own PR, since vite-plus pins an exact vitest.
 
 ## frontend-release-npm.yml
 
