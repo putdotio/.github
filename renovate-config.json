@@ -61,10 +61,11 @@
       "minimumReleaseAge": "3 days"
     },
     {
-      "description": "vite-plus pins an exact vitest, and its coverage guard fails when @vitest/* differs. The toolchain moves in its own PR so a gap, such as vitest clearing release age before the vite-plus that bundles it, fails only this PR; it turns green once the matching vite-plus ages in",
+      "description": "vite-plus pins an exact vitest, and its coverage guard fails when @vitest/* differs, so the toolchain moves as one PR. Each member keeps its own release-age clock, and strict filtering would fall back per member and pair a vitest that aged first with the previous vite-plus. Filtering none takes the latest of every member at once and holds automerge on the pending renovate/stability-days check until all of them age. The PR is still red while upstream vitest is ahead of any vite-plus release, and it turns green once one ships",
       "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core", "vitest", "@vitest/*"],
       "matchUpdateTypes": ["patch", "minor", "major"],
-      "groupName": "vite-plus toolchain"
+      "groupName": "vite-plus toolchain",
+      "internalChecksFilter": "none"
     },
     {
       "description": "Pin Actions and images by digest on the initial run without waiting for release age",
