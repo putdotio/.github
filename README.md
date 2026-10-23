@@ -162,10 +162,8 @@ steps:
   - id: notes
     uses: putdotio/.github/.github/actions/beta-notes@<commit> # vX.Y.Z
     with:
-      notes: ${{ inputs.changelog }}
       app: put.io for Apple TV
       tag-pattern: apple-tv-v* # release tags
-  # ${{ steps.notes.outputs.notes }} is the What to Test text
 ```
 
 - Hand-written `notes` pass through, and Claude does not run.
