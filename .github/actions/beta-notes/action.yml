@@ -1,0 +1,107 @@
+name: Beta notes
+description: >-
+  Tester notes for a beta build. Hand-written notes pass through; otherwise
+  Claude reads the pull requests and code changed since the previous beta and
+  writes short bullets. A range with no user-facing commits, or any Claude
+  failure, gives the fallback, so a beta never waits on it.
+inputs:
+  notes:
+    description: Hand-written notes; when set, they are the output and Claude does not run.
+    required: false
+    default: ""
+  app:
+    description: App name Claude writes for, e.g. put.io for Apple TV.
+    required: true
+  base:
+    description: Ref of the previous beta. Wins over tag-pattern.
+    required: false
+    default: ""
+  tag-pattern:
+    description: >-
+      git describe --match glob for the previous beta's tag, e.g. apple-tv-v*.
+      Needs a checkout with fetch-depth: 0.
+    required: false
+    default: ""
+  max-length:
+    description: Store limit in characters; bullets past it are dropped. Google Play allows 500.
+    required: false
+    default: "4000"
+  fallback:
+    description: Notes when there is nothing to say or Claude fails.
+    required: false
+    default: Bug fixes and improvements.
+  model:
+    description: Claude model.
+    required: false
+    default: claude-opus-5-5
+  max-turns:
+    description: Upper bound on Claude's tool calls.
+    required: false
+    default: "40"
+  anthropic-federation-rule-id:
+    description: Workload identity federation rule (fdrl_...); needs id-token write on the job.
+    required: false
+    default: ""
+  anthropic-organization-id:
+    description: Anthropic organization UUID for workload identity federation.
+    required: false
+    default: ""
+  anthropic-service-account-id:
+    description: Service account (svac_...) the federated token acts as.
+    required: false
+    default: ""
+  anthropic-api-key:
+    description: Static key, only when federation is not set up; it takes precedence over federation.
+    required: false
+    default: ""
+  token:
+    description: Token Claude uses to read pull requests; needs pull-requests read.
+    required: false
+    default: ${{ github.token }}
+outputs:
+  notes:
+    description: Notes as one bullet per line, or the hand-written notes or fallback.
+    value: ${{ steps.finish.outputs.notes }}
+  source:
+    description: manual, claude, or fallback.
+    value: ${{ steps.finish.outputs.source }}
+runs:
+  using: composite
+  steps:
+    - name: Select the range since the previous beta
+      id: plan
+      shell: bash
+      env:
+        NOTES: ${{ inputs.notes }}
+        APP: ${{ inputs.app }}
+        BASE_REF: ${{ inputs.base }}
+        TAG_PATTERN: ${{ inputs.tag-pattern }}
+      run: '"$GITHUB_ACTION_PATH/plan.sh"'
+    - name: Write notes with Claude
+      id: claude
+      if: steps.plan.outputs.run == 'true'
+      continue-on-error: true
+      uses: anthropics/claude-code-action/base-action@ae68417a745a5df4b2124873632bd73a2255e6f6 # v1.0.259
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      with:
+        prompt_file: ${{ steps.plan.outputs.prompt }}
+        claude_args: >-
+          --model ${{ inputs.model }}
+          --max-turns ${{ inputs.max-turns }}
+          --allowedTools Read Grep Glob "Bash(git log:*)" "Bash(git show:*)" "Bash(git diff:*)" "Bash(gh pr view:*)"
+          --json-schema '{"type":"object","properties":{"bullets":{"type":"array","maxItems":8,"items":{"type":"string","maxLength":160}}},"required":["bullets"],"additionalProperties":false}'
+        anthropic_federation_rule_id: ${{ inputs.anthropic-federation-rule-id }}
+        anthropic_organization_id: ${{ inputs.anthropic-organization-id }}
+        anthropic_service_account_id: ${{ inputs.anthropic-service-account-id }}
+        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+    - name: Fit the notes to the store
+      id: finish
+      shell: bash
+      env:
+        NOTES: ${{ inputs.notes }}
+        CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+        STRUCTURED: ${{ steps.claude.outputs.structured_output }}
+        MAX_LENGTH: ${{ inputs.max-length }}
+        FALLBACK: ${{ inputs.fallback }}
+      run: '"$GITHUB_ACTION_PATH/finish.sh"'

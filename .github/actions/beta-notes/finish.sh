@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Turns Claude's bullets into notes that fit the store limit, or falls back.
+# Writes notes and source to GITHUB_OUTPUT.
+set -euo pipefail
+
+notes=""
+source=fallback
+if [ -n "$NOTES" ]; then
+  notes="$NOTES"
+  source=manual
+elif [ "$CONCLUSION" = success ] && [ -n "$STRUCTURED" ]; then
+  # One line per bullet; drop any that carry a link or a line break.
+  bullets="$(jq -r '.bullets[]? | select(type == "string") | select(test("[\r\n]|://") | not) | sub("^[-*• ]+"; "") | sub("[. ]+$"; "") | select(length > 0) | "- " + .' <<< "$STRUCTURED")" || bullets=""
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    candidate="${notes:+$notes$'\n'}$line"
+    [ "${#candidate}" -le "$MAX_LENGTH" ] || break
+    notes="$candidate"
+  done <<< "$bullets"
+  [ -z "$notes" ] || source=claude
+fi
+if [ -z "$notes" ]; then
+  notes="$FALLBACK"
+fi
+
+delimiter="EOF_${RANDOM}${RANDOM}${RANDOM}"
+{
+  echo "source=$source"
+  echo "notes<<$delimiter"
+  echo "$notes"
+  echo "$delimiter"
+} >> "$GITHUB_OUTPUT"
+{
+  echo "### Beta notes ($source)"
+  echo
+  echo "$notes"
+} >> "$GITHUB_STEP_SUMMARY"

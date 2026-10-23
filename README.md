@@ -142,6 +142,51 @@ default. The reasoning and its sources are in gh-setup's
 and
 [runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
 
+## actions/beta-notes
+
+[`actions/beta-notes`](.github/actions/beta-notes/action.yml) writes tester
+notes for a beta build. Claude reads the pull requests and code changed since
+the previous beta and returns short bullets, one per line:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: read
+  id-token: write # workload identity federation
+steps:
+  - uses: actions/checkout@<commit>
+    with:
+      fetch-depth: 0
+      persist-credentials: false
+  - id: notes
+    uses: putdotio/.github/.github/actions/beta-notes@<commit> # vX.Y.Z
+    with:
+      notes: ${{ inputs.changelog }}
+      app: put.io for Apple TV
+      tag-pattern: apple-tv-v*
+      anthropic-federation-rule-id: fdrl_...
+      anthropic-organization-id: <uuid>
+  # ${{ steps.notes.outputs.notes }} is the What to Test text
+```
+
+- Hand-written `notes` pass through, and Claude does not run.
+- The previous beta is `base`, or the newest tag matching `tag-pattern`.
+- A range with no `feat`, `fix`, or `perf` commit outside the `deps`, `ci`,
+  `docs`, `test`, and `build` scopes skips Claude.
+- Claude can read files and run `git log`, `git show`, `git diff`, and
+  `gh pr view`; nothing else.
+- A Claude failure, an empty list, or a missing previous beta gives `fallback`;
+  a beta never waits on Claude.
+- Bullets past `max-length` are dropped; set `500` for Google Play.
+- `source` says whether the notes are `manual`, `claude`, or `fallback`.
+
+Credentials come from the caller. Workload identity federation exchanges the
+job's GitHub OIDC token, so no key is stored: the Anthropic rule names the
+repositories it trusts, and the rule and organization IDs are not secrets.
+`anthropic-api-key` takes precedence over federation when set; GitHub Free
+hides organization secrets from private repositories, so a private caller
+keeps that key in its own repository or Environment secrets.
+
 ## Pinned versions
 
 Each tool runs at one version on every runner. Linux runners pull its image
