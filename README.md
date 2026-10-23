@@ -166,7 +166,6 @@ steps:
       tag-pattern: apple-tv-v* # release tags
 ```
 
-- Hand-written `notes` pass through, and Claude does not run.
 - The base build is `base`, or the newest tag matching `tag-pattern` below
   the build commit.
 - A range with no `feat`, `fix`, or `perf` commit outside the `deps`, `ci`,
@@ -176,7 +175,7 @@ steps:
 - A Claude failure, an empty list, or a missing base build gives `fallback`;
   a beta never waits on Claude.
 - Bullets past `max-length` are dropped; set `500` for Google Play.
-- `source` says whether the notes are `manual`, `claude`, or `fallback`.
+- `source` says whether the notes are `claude` or `fallback`.
 
 The action authenticates through workload identity federation: it exchanges
 the job's GitHub OIDC token, so no key is stored. Its defaults name put.io's

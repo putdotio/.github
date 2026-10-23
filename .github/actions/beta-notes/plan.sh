@@ -3,11 +3,6 @@ set -euo pipefail
 
 rm -f "$RESULT"
 
-if [ -n "$NOTES" ]; then
-  echo "run=false" >> "$GITHUB_OUTPUT"
-  exit 0
-fi
-
 head="$(git rev-parse HEAD)"
 base="$BASE_REF"
 if [ -z "$base" ] && [ -n "$TAG_PATTERN" ]; then

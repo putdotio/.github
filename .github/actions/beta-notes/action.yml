@@ -1,15 +1,10 @@
 name: Beta notes
 description: >-
-  Tester notes for a beta build. Hand-written notes pass through; otherwise
-  Claude reads the pull requests and code changed since a base build, such as
+  Tester notes for a beta build. Claude reads the pull requests and code changed since a base build, such as
   the last store release, and writes short bullets. A range with no
   user-facing commits, or any Claude failure, gives the fallback, so a beta
   never waits on it.
 inputs:
-  notes:
-    description: Hand-written notes; when set, they are the output and Claude does not run.
-    required: false
-    default: ""
   app:
     description: App name Claude writes for, e.g. put.io for Apple TV.
     required: true
@@ -65,10 +60,10 @@ inputs:
     default: ${{ github.token }}
 outputs:
   notes:
-    description: Notes as one bullet per line, or the hand-written notes or fallback.
+    description: Notes as one bullet per line, or the fallback.
     value: ${{ steps.finish.outputs.notes }}
   source:
-    description: manual, claude, or fallback.
+    description: claude or fallback.
     value: ${{ steps.finish.outputs.source }}
 runs:
   using: composite
@@ -77,7 +72,6 @@ runs:
       id: plan
       shell: bash
       env:
-        NOTES: ${{ inputs.notes }}
         APP: ${{ inputs.app }}
         BASE_REF: ${{ inputs.base }}
         TAG_PATTERN: ${{ inputs.tag-pattern }}
@@ -104,7 +98,6 @@ runs:
       id: finish
       shell: bash
       env:
-        NOTES: ${{ inputs.notes }}
         RESULT: ${{ runner.temp }}/beta-notes-result.json
         MAX_LENGTH: ${{ inputs.max-length }}
         FALLBACK: ${{ inputs.fallback }}

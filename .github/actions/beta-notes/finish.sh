@@ -3,10 +3,7 @@ set -euo pipefail
 
 notes=""
 source=fallback
-if [ -n "$NOTES" ]; then
-  notes="$NOTES"
-  source=manual
-elif [ -s "$RESULT" ]; then
+if [ -s "$RESULT" ]; then
   if jq -e '.is_error' "$RESULT" > /dev/null; then
     echo "beta-notes: Claude failed: $(jq -r '.result // .subtype' "$RESULT" | head -c 300)" >&2
   fi
