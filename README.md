@@ -146,7 +146,8 @@ and
 
 [`actions/beta-notes`](.github/actions/beta-notes/action.yml) writes tester
 notes for a beta build. Claude reads the pull requests and code changed since
-the previous beta and returns short bullets, one per line:
+a base build, usually the last store release, and returns short bullets, one
+per line:
 
 ```yaml
 permissions:
@@ -163,31 +164,28 @@ steps:
     with:
       notes: ${{ inputs.changelog }}
       app: put.io for Apple TV
-      tag-pattern: apple-tv-v*
-      anthropic-federation-rule-id: fdrl_...
-      anthropic-organization-id: <uuid>
-      anthropic-service-account-id: svac_...
-      anthropic-workspace-id: wrkspc_...
+      tag-pattern: apple-tv-v* # release tags
   # ${{ steps.notes.outputs.notes }} is the What to Test text
 ```
 
 - Hand-written `notes` pass through, and Claude does not run.
-- The previous beta is `base`, or the newest tag matching `tag-pattern`.
+- The base build is `base`, or the newest tag matching `tag-pattern` below
+  the build commit.
 - A range with no `feat`, `fix`, or `perf` commit outside the `deps`, `ci`,
   `docs`, `test`, and `build` scopes skips Claude.
 - Claude can read files and run `git log`, `git show`, `git diff`, and
   `gh pr view`; nothing else.
-- A Claude failure, an empty list, or a missing previous beta gives `fallback`;
+- A Claude failure, an empty list, or a missing base build gives `fallback`;
   a beta never waits on Claude.
 - Bullets past `max-length` are dropped; set `500` for Google Play.
 - `source` says whether the notes are `manual`, `claude`, or `fallback`.
 
-Credentials come from the caller. Workload identity federation exchanges the
-job's GitHub OIDC token, so no key is stored: the Anthropic rule names the
-repositories it trusts, and the rule and organization IDs are not secrets.
-`anthropic-api-key` takes precedence over federation when set; GitHub Free
-hides organization secrets from private repositories, so a private caller
-keeps that key in its own repository or Environment secrets.
+The action authenticates through workload identity federation: it exchanges
+the job's GitHub OIDC token, so no key is stored. Its defaults name put.io's
+Anthropic rule, which trusts `main` of `putdotio` repositories, plus the
+organization, service account, and workspace; none of them is a secret, and
+GitHub Free hides organization variables from private repositories, so they
+live here. `anthropic-api-key` takes precedence over federation when set.
 
 ## Pinned versions
 

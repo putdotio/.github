@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Picks the commit range since the previous beta and decides whether Claude
+# Picks the commit range since the base build and decides whether Claude
 # needs to run. Writes base, head, and run to GITHUB_OUTPUT.
 set -euo pipefail
 
@@ -15,12 +15,12 @@ if [ -z "$base" ] && [ -n "$TAG_PATTERN" ]; then
   base="$(git describe --tags --abbrev=0 --match "$TAG_PATTERN" HEAD^ 2>/dev/null)" || base=""
 fi
 if [ -z "$base" ]; then
-  echo "beta-notes: no previous beta to compare with; using the fallback" >&2
+  echo "beta-notes: no base build to compare with; using the fallback" >&2
   echo "run=false" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 if ! base="$(git rev-parse --verify --quiet "$base^{commit}")"; then
-  echo "beta-notes: the previous beta is not in this checkout; check out with fetch-depth: 0" >&2
+  echo "beta-notes: the base build is not in this checkout; check out with fetch-depth: 0" >&2
   echo "run=false" >> "$GITHUB_OUTPUT"
   exit 0
 fi
