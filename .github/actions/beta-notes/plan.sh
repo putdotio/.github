@@ -11,7 +11,8 @@ fi
 head="$(git rev-parse HEAD)"
 base="$BASE_REF"
 if [ -z "$base" ] && [ -n "$TAG_PATTERN" ]; then
-  base="$(git describe --tags --abbrev=0 --match "$TAG_PATTERN" HEAD 2>/dev/null)" || base=""
+  # From the parent, so a tag already on the build commit is never the base.
+  base="$(git describe --tags --abbrev=0 --match "$TAG_PATTERN" HEAD^ 2>/dev/null)" || base=""
 fi
 if [ -z "$base" ]; then
   echo "beta-notes: no previous beta to compare with; using the fallback" >&2
