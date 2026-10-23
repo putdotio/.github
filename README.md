@@ -164,7 +164,6 @@ steps:
     with:
       app: put.io for Apple TV
       tag-pattern: apple-tv-v* # release tags
-  # ${{ steps.notes.outputs.notes }} is the What to Test text
 ```
 
 - Hand-written `notes` pass through, and Claude does not run.

@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# Picks the commit range since the base build and decides whether Claude
-# needs to run. Writes run and, when it is true, prompt to GITHUB_OUTPUT.
 set -euo pipefail
 
-# A result left by an earlier invocation in this job must not count.
 rm -f "$RESULT"
 
 if [ -n "$NOTES" ]; then
@@ -14,7 +11,6 @@ fi
 head="$(git rev-parse HEAD)"
 base="$BASE_REF"
 if [ -z "$base" ] && [ -n "$TAG_PATTERN" ]; then
-  # From the parent, so a tag already on the build commit is never the base.
   base="$(git describe --tags --abbrev=0 --match "$TAG_PATTERN" HEAD^ 2>/dev/null)" || base=""
 fi
 if [ -z "$base" ]; then
@@ -28,7 +24,6 @@ if ! base="$(git rev-parse --verify --quiet "$base^{commit}")"; then
   exit 0
 fi
 
-# Only feat, fix, and perf commits outside tooling scopes can reach testers.
 candidates="$(git log --format='%s' "$base..$head" \
   | grep -E '^(feat|fix|perf)(\([^)]*\))?!?: ' \
   | grep -cvE '^[a-z]+\((deps|ci|docs|test|build)\)')" || true

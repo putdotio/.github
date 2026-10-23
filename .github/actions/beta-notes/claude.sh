@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Runs Claude Code headless on the prompt and writes its JSON result to RESULT.
-# claude-code-action is avoided: its Agent SDK launch is rejected as
-# "Credit balance is too low" (anthropics/claude-code-action#1901).
 set -euo pipefail
 
-# The binary is pinned by sha256 per platform; manifest.json under the
-# release lists them.
 version=2.1.309
 case "$(uname -s)-$(uname -m)" in
   Linux-x86_64) platform=linux-x64 sha=4d704a8aecbe038affa3000f498ae17c1b4f753add8facb8764120affc99b658 ;;
@@ -36,13 +31,10 @@ else
     echo "beta-notes: federation needs id-token: write on the job" >&2
     exit 1
   fi
-  # Claude never sees the OIDC request credentials; only this shell can mint
-  # GitHub tokens.
   request_url="$ACTIONS_ID_TOKEN_REQUEST_URL"
   request_token="$ACTIONS_ID_TOKEN_REQUEST_TOKEN"
   unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
 
-  # Fresh per invocation, so no cached token from another rule carries over.
   dir="$RUNNER_TEMP/beta-notes-federation"
   rm -rf "$dir"
   (umask 077 && mkdir -p "$dir/configs")
@@ -54,13 +46,8 @@ else
     mv "$ANTHROPIC_IDENTITY_TOKEN_FILE.next" "$ANTHROPIC_IDENTITY_TOKEN_FILE"
   }
   write_identity_token
-  # GitHub's token lives five minutes and each one exchanges once, so a long
-  # run needs a fresh one before the CLI refreshes its Anthropic token.
   (while sleep 240; do write_identity_token || true; done) &
   refresh=$!
-  # A federation profile turns on the CLI's credential cache. Without it the
-  # CLI exchanges the single-use GitHub token more than once and the second
-  # exchange fails as jti_reused.
   echo '{"version":"1.0","authentication":{"type":"oidc_federation"}}' > "$dir/configs/default.json"
   export ANTHROPIC_CONFIG_DIR="$dir" ANTHROPIC_PROFILE=default
 fi
