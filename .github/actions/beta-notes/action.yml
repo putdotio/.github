@@ -81,6 +81,7 @@ runs:
         APP: ${{ inputs.app }}
         BASE_REF: ${{ inputs.base }}
         TAG_PATTERN: ${{ inputs.tag-pattern }}
+        RESULT: ${{ runner.temp }}/beta-notes-result.json
       run: '"$GITHUB_ACTION_PATH/plan.sh"'
     - name: Write notes with Claude
       id: claude
