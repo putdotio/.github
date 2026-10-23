@@ -3,6 +3,9 @@
 # needs to run. Writes base, head, and run to GITHUB_OUTPUT.
 set -euo pipefail
 
+# A result left by an earlier invocation in this job must not count.
+rm -f "$RESULT"
+
 if [ -n "$NOTES" ]; then
   echo "run=false" >> "$GITHUB_OUTPUT"
   exit 0
