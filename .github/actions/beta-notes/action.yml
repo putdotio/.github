@@ -1,9 +1,10 @@
 name: Beta notes
 description: >-
   Tester notes for a beta build. Hand-written notes pass through; otherwise
-  Claude reads the pull requests and code changed since the previous beta and
-  writes short bullets. A range with no user-facing commits, or any Claude
-  failure, gives the fallback, so a beta never waits on it.
+  Claude reads the pull requests and code changed since a base build, such as
+  the last store release, and writes short bullets. A range with no
+  user-facing commits, or any Claude failure, gives the fallback, so a beta
+  never waits on it.
 inputs:
   notes:
     description: Hand-written notes; when set, they are the output and Claude does not run.
@@ -13,13 +14,13 @@ inputs:
     description: App name Claude writes for, e.g. put.io for Apple TV.
     required: true
   base:
-    description: Ref of the previous beta. Wins over tag-pattern.
+    description: Ref of the base build. Wins over tag-pattern.
     required: false
     default: ""
   tag-pattern:
     description: >-
-      git describe --match glob for the previous beta's tag, e.g. apple-tv-v*.
-      Needs a checkout with fetch-depth: 0.
+      git describe --match glob for the base build's tag, e.g. the release tag
+      apple-tv-v*. Needs a checkout with fetch-depth: 0.
     required: false
     default: ""
   max-length:
@@ -39,21 +40,21 @@ inputs:
     required: false
     default: "40"
   anthropic-federation-rule-id:
-    description: Workload identity federation rule (fdrl_...); needs id-token write on the job.
+    description: Workload identity federation rule (fdrl_...); needs id-token write on the job. Defaults to put.io's rule, which trusts main of putdotio repositories.
     required: false
-    default: ""
+    default: fdrl_0163Ae8fnpTVfnEetnsCiGuG
   anthropic-organization-id:
     description: Anthropic organization UUID for workload identity federation.
     required: false
-    default: ""
+    default: 2e584ae4-19cb-48ff-82bf-7b8d0506f8e6
   anthropic-service-account-id:
     description: Service account (svac_...) the federated token acts as.
     required: false
-    default: ""
+    default: svac_01NKncFUgmevWDAY6kExgK63
   anthropic-workspace-id:
     description: Workspace (wrkspc_...) the federated token acts in.
     required: false
-    default: ""
+    default: wrkspc_01X5KGoAA1MuzqQqCaiTWLyv
   anthropic-api-key:
     description: Static key, only when federation is not set up; it takes precedence over federation.
     required: false
@@ -72,7 +73,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Select the range since the previous beta
+    - name: Select the range since the base build
       id: plan
       shell: bash
       env:

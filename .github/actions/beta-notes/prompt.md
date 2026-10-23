@@ -1,5 +1,6 @@
 You write the notes testers see for a new beta build of a put.io app. The
-range below is everything that changed since the previous beta.
+range below is everything that changed since the base build, usually the last
+store release.
 
 Work from the repository in the current directory:
 
