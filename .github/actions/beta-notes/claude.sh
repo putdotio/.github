@@ -20,10 +20,17 @@ else
     echo "beta-notes: federation needs id-token: write on the job" >&2
     exit 1
   fi
-  export ANTHROPIC_IDENTITY_TOKEN_FILE="$RUNNER_TEMP/beta-notes-identity-token"
+  dir="$RUNNER_TEMP/beta-notes-federation"
+  (umask 077 && mkdir -p "$dir/configs")
+  export ANTHROPIC_IDENTITY_TOKEN_FILE="$dir/identity-token"
   curl -fsS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
     "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
     | jq -er .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE"
+  # A federation profile turns on the CLI's credential cache. Without it the
+  # CLI exchanges the single-use GitHub token more than once and the second
+  # exchange fails as jti_reused.
+  echo '{"version":"1.0","authentication":{"type":"oidc_federation"}}' > "$dir/configs/default.json"
+  export ANTHROPIC_CONFIG_DIR="$dir" ANTHROPIC_PROFILE=default
 fi
 
 claude -p "$(cat "$PROMPT")" \
