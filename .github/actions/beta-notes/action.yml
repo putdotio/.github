@@ -50,6 +50,10 @@ inputs:
     description: Service account (svac_...) the federated token acts as.
     required: false
     default: ""
+  anthropic-workspace-id:
+    description: Workspace (wrkspc_...) the federated token acts in.
+    required: false
+    default: ""
   anthropic-api-key:
     description: Static key, only when federation is not set up; it takes precedence over federation.
     required: false
@@ -94,6 +98,7 @@ runs:
         anthropic_federation_rule_id: ${{ inputs.anthropic-federation-rule-id }}
         anthropic_organization_id: ${{ inputs.anthropic-organization-id }}
         anthropic_service_account_id: ${{ inputs.anthropic-service-account-id }}
+        anthropic_workspace_id: ${{ inputs.anthropic-workspace-id }}
         anthropic_api_key: ${{ inputs.anthropic-api-key }}
     - name: Fit the notes to the store
       id: finish
