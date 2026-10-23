@@ -41,6 +41,9 @@ jobs:
         with:
           app: put.io shared GitHub actions
           base: v2.0.0
+      - name: Print Claude's result message
+        if: always()
+        run: jq -c '.[] | select(.type == "result" or .type == "assistant") | del(.message.usage)' "$RUNNER_TEMP/claude-execution-output.json" | cut -c1-1500
       - name: Require notes from Claude
         env:
           SOURCE: ${{ steps.notes.outputs.source }}
