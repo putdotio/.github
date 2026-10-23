@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Picks the commit range since the base build and decides whether Claude
-# needs to run. Writes base, head, and run to GITHUB_OUTPUT.
+# needs to run. Writes run and, when it is true, prompt to GITHUB_OUTPUT.
 set -euo pipefail
 
 # A result left by an earlier invocation in this job must not count.
