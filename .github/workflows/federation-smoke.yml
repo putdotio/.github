@@ -41,7 +41,5 @@ jobs:
         with:
           app: put.io shared GitHub actions
           base: v2.0.0
-      - name: Require notes from Claude
-        env:
-          SOURCE: ${{ steps.notes.outputs.source }}
-        run: test "$SOURCE" = claude
+      - name: Require a successful Claude run
+        run: jq -e '{is_error, num_turns, total_cost_usd, structured_output} | debug | .is_error == false' "$RUNNER_TEMP/beta-notes-result.json"
