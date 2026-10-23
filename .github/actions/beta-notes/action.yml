@@ -2,8 +2,9 @@ name: Beta notes
 description: >-
   Tester notes for a beta build. Hand-written notes pass through; otherwise
   Claude reads the pull requests and code changed since a base build, such as
-  the last store release, and writes short bullets. A range with no user-facing commits, or any Claude
-  failure, gives the fallback, so a beta never waits on it.
+  the last store release, and writes short bullets. A range with no
+  user-facing commits, or any Claude failure, gives the fallback, so a beta
+  never waits on it.
 inputs:
   notes:
     description: Hand-written notes; when set, they are the output and Claude does not run.
