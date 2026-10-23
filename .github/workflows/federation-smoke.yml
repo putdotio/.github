@@ -23,10 +23,6 @@ jobs:
         with:
           app: put.io shared GitHub actions
           base: v2.0.0
-          anthropic-federation-rule-id: fdrl_0163Ae8fnpTVfnEetnsCiGuG
-          anthropic-organization-id: 2e584ae4-19cb-48ff-82bf-7b8d0506f8e6
-          anthropic-service-account-id: svac_01NKncFUgmevWDAY6kExgK63
-          anthropic-workspace-id: wrkspc_01X5KGoAA1MuzqQqCaiTWLyv
       - name: Require notes from Claude
         env:
           SOURCE: ${{ steps.notes.outputs.source }}
