@@ -42,7 +42,9 @@ else
   request_token="$ACTIONS_ID_TOKEN_REQUEST_TOKEN"
   unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
 
+  # Fresh per invocation, so no cached token from another rule carries over.
   dir="$RUNNER_TEMP/beta-notes-federation"
+  rm -rf "$dir"
   (umask 077 && mkdir -p "$dir/configs")
   export ANTHROPIC_IDENTITY_TOKEN_FILE="$dir/identity-token"
   write_identity_token() {
