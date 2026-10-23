@@ -18,6 +18,24 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Fetch a GitHub OIDC token
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const token = await core.getIDToken('https://api.anthropic.com');
+            core.setSecret(token);
+            core.exportVariable('JWT', token);
+      - name: Exchange it for an Anthropic token
+        run: |
+          jq -n --arg jwt "$JWT" '{
+            grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            assertion: $jwt,
+            federation_rule_id: "fdrl_0163Ae8fnpTVfnEetnsCiGuG",
+            organization_id: "2e584ae4-19cb-48ff-82bf-7b8d0506f8e6",
+            service_account_id: "svac_01NKncFUgmevWDAY6kExgK63",
+            workspace_id: "wrkspc_01X5KGoAA1MuzqQqCaiTWLyv"
+          }' | curl -sS https://api.anthropic.com/v1/oauth/token -H "content-type: application/json" --data @- \
+            | jq 'with_entries(if (.key | test("token$")) then .value = "<redacted>" else . end)'
       - id: notes
         uses: ./.github/actions/beta-notes # zizmor: ignore[self-repository]
         with:
