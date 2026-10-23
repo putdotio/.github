@@ -1,0 +1,33 @@
+name: Federation smoke
+
+# Temporary: proves beta-notes can exchange a GitHub OIDC token with Anthropic.
+on: workflow_dispatch
+
+permissions: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: notes
+        uses: ./.github/actions/beta-notes # zizmor: ignore[self-repository]
+        with:
+          app: put.io shared GitHub actions
+          base: v2.0.0
+          anthropic-federation-rule-id: fdrl_0163Ae8fnpTVfnEetnsCiGuG
+          anthropic-organization-id: 2e584ae4-19cb-48ff-82bf-7b8d0506f8e6
+          anthropic-service-account-id: svac_01NKncFUgmevWDAY6kExgK63
+          anthropic-workspace-id: wrkspc_01X5KGoAA1MuzqQqCaiTWLyv
+      - name: Require notes from Claude
+        env:
+          SOURCE: ${{ steps.notes.outputs.source }}
+        run: test "$SOURCE" = claude
