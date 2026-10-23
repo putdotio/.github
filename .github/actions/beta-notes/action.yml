@@ -86,28 +86,25 @@ runs:
       id: claude
       if: steps.plan.outputs.run == 'true'
       continue-on-error: true
-      uses: anthropics/claude-code-action/base-action@ae68417a745a5df4b2124873632bd73a2255e6f6 # v1.0.259
+      shell: bash
       env:
+        PROMPT: ${{ steps.plan.outputs.prompt }}
+        RESULT: ${{ runner.temp }}/beta-notes-result.json
+        MODEL: ${{ inputs.model }}
+        MAX_TURNS: ${{ inputs.max-turns }}
         GH_TOKEN: ${{ inputs.token }}
-      with:
-        prompt_file: ${{ steps.plan.outputs.prompt }}
-        claude_args: >-
-          --model ${{ inputs.model }}
-          --max-turns ${{ inputs.max-turns }}
-          --allowedTools Read Grep Glob "Bash(git log:*)" "Bash(git show:*)" "Bash(git diff:*)" "Bash(gh pr view:*)"
-          --json-schema '{"type":"object","properties":{"bullets":{"type":"array","maxItems":8,"items":{"type":"string","maxLength":160}}},"required":["bullets"],"additionalProperties":false}'
-        anthropic_federation_rule_id: ${{ inputs.anthropic-federation-rule-id }}
-        anthropic_organization_id: ${{ inputs.anthropic-organization-id }}
-        anthropic_service_account_id: ${{ inputs.anthropic-service-account-id }}
-        anthropic_workspace_id: ${{ inputs.anthropic-workspace-id }}
-        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+        ANTHROPIC_FEDERATION_RULE_ID: ${{ inputs.anthropic-federation-rule-id }}
+        ANTHROPIC_ORGANIZATION_ID: ${{ inputs.anthropic-organization-id }}
+        ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ inputs.anthropic-service-account-id }}
+        ANTHROPIC_WORKSPACE_ID: ${{ inputs.anthropic-workspace-id }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: '"$GITHUB_ACTION_PATH/claude.sh"'
     - name: Fit the notes to the store
       id: finish
       shell: bash
       env:
         NOTES: ${{ inputs.notes }}
-        CONCLUSION: ${{ steps.claude.outputs.conclusion }}
-        STRUCTURED: ${{ steps.claude.outputs.structured_output }}
+        RESULT: ${{ runner.temp }}/beta-notes-result.json
         MAX_LENGTH: ${{ inputs.max-length }}
         FALLBACK: ${{ inputs.fallback }}
       run: '"$GITHUB_ACTION_PATH/finish.sh"'
