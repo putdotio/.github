@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Vite+ updates with core and Vitest versions derived from its published manifest. Opt in only when Vite+ owns the test toolchain.",
+  "extends": ["github>putdotio/.github:renovate-config"],
+  "customDatasources": {
+    "vite-plus-component": {
+      "defaultRegistryUrlTemplate": "https://registry.npmjs.org/vite-plus",
+      "transformTemplates": [
+        "($root := $; $component := \"{{{packageName}}}\" = \"vite-plus\" ? \"root\" : \"{{{packageName}}}\" = \"@voidzero-dev/vite-plus-core\" ? \"vite\" : \"vitest\"; $version := function($manifest) { $component = \"root\" ? $manifest.version : $component = \"vite\" ? $substringAfter($manifest.dependencies.vite, \"npm:@voidzero-dev/vite-plus-core@\") : $manifest.dependencies.vitest }; $latest := $root.\"dist-tags\".latest; $manifest := $lookup($root.versions, $latest); $target := $version($manifest); $core := $substringAfter($manifest.dependencies.vite, \"npm:@voidzero-dev/vite-plus-core@\"); $assert($exists($match($latest, /^\\d+\\.\\d+\\.\\d+$/)) and $exists($match($target, /^\\d+\\.\\d+\\.\\d+$/)) and $exists($lookup($root.time, $latest)) and $manifest.version = $latest and $exists($match($core, /^\\d+\\.\\d+\\.\\d+$/)) and $exists($match($manifest.dependencies.vitest, /^\\d+\\.\\d+\\.\\d+$/)), \"Vite+ latest must publish an exact stable component and timestamp\"); {\"releases\": $each($root.versions, function($manifest, $release) { ($value := $version($manifest); $exists($match($release, /^\\d+\\.\\d+\\.\\d+$/)) and $exists($value) and $exists($match($value, /^\\d+\\.\\d+\\.\\d+$/)) and $exists($lookup($root.time, $release)) ? {\"version\": $value, \"releaseTimestamp\": $lookup($root.time, $release)} ) }), \"tags\": {\"latest\": $target}, \"sourceUrl\": $component != \"vitest\" ? \"https://github.com/voidzero-dev/vite-plus\" : \"https://github.com/vitest-dev/vitest\"})"
+      ]
+    }
+  },
+  "packageRules": [
+    {
+      "description": "Move Vite+, its core, and the bundled Vitest ecosystem together. A major member gates the whole group.",
+      "matchPackageNames": [
+        "vite-plus",
+        "@voidzero-dev/vite-plus-core",
+        "vitest",
+        "@vitest/*",
+        "!@vitest/eslint-plugin",
+        "!@vitest/coverage-c8"
+      ],
+      "groupName": "vite-plus toolchain",
+      "internalChecksFilter": "none",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Use one validated Vite+ release manifest for the parent and every bundled component.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": [
+        "vite-plus",
+        "@voidzero-dev/vite-plus-core",
+        "vitest",
+        "@vitest/*",
+        "!@vitest/eslint-plugin",
+        "!@vitest/coverage-c8"
+      ],
+      "overrideDatasource": "custom.vite-plus-component",
+      "versioning": "npm",
+      "followTag": "latest",
+      "registryUrls": ["https://registry.npmjs.org/vite-plus"]
+    }
+  ]
+}

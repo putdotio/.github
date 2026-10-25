@@ -61,18 +61,18 @@
       "minimumReleaseAge": "3 days"
     },
     {
-      "description": "vite-plus pins an exact vitest, and its coverage guard fails when @vitest/* differs, so the toolchain moves as one PR. Each member keeps its own release-age clock, and strict filtering would fall back per member and pair a vitest that aged first with the previous vite-plus. Filtering none takes the latest of every member at once and holds automerge on the pending renovate/stability-days check until all of them age. The PR is still red while upstream vitest is ahead of any vite-plus release, and it turns green once one ships",
-      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core", "vitest", "@vitest/*"],
-      "matchUpdateTypes": ["patch", "minor", "major"],
+      "description": "Keep Vite+ and its Vite core together. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
+      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"],
       "groupName": "vite-plus toolchain",
-      "internalChecksFilter": "none"
+      "internalChecksFilter": "none",
+      "separateMajorMinor": false
     },
     {
-      "description": "Effect packages ship together and peer on the same effect version, so they move as one PR. Each member keeps its own release-age clock, and strict filtering would merge the members that aged first. Filtering none takes the latest of every member and holds automerge until all of them age",
+      "description": "Update Effect and its packages together without selecting partially aged releases. Major updates still require approval.",
       "matchPackageNames": ["effect", "@effect/*"],
-      "matchUpdateTypes": ["patch", "minor", "major"],
       "groupName": "effect",
-      "internalChecksFilter": "none"
+      "internalChecksFilter": "none",
+      "separateMajorMinor": false
     },
     {
       "description": "Pin Actions and images by digest on the initial run without waiting for release age",
