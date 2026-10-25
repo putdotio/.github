@@ -28,33 +28,15 @@ policy. The Renovate app runs only where a repository commits a config:
 }
 ```
 
-Updates run daily after a three-day release age (one day for Actions and
-images). Patch and minor updates are grouped per manager and merged by
-Renovate once every check on the PR passes; majors wait for approval on the
-Dependency Dashboard issue. `vite-plus`, `vitest`, and `@vitest/*` move in
-their own PR, since vite-plus pins an exact vitest. That PR takes the latest
-of every member at once and merges only after all of them clear release age.
-`effect` and `@effect/*` move the same way in one `effect` PR, since every
-member peers on the same `effect` version.
-
 ## frontend-release-npm.yml
 
 Publishes an npm package with semantic-release and npm trusted publishing. The
 caller keeps its own verify job, workflow filename (npm's trusted publisher
 checks it), `.releaserc.json`, and `release` Environment with the variable
 `PUTIO_CI_APP_CLIENT_ID` and the secret `PUTIO_CI_APP_PRIVATE_KEY`.
-The secret is passed by name; the shared job binds to the same Environment and
-reads the Environment's value. Existing callers can keep the legacy
-`PUTIO_RELEASE_BOT_PRIVATE_KEY` input and `PUTIO_RELEASE_BOT_CLIENT_ID`
-variable while moving to the new names. The default plugins write `package.json` back
-to `main` as `putio-ci[bot]`, so that App stays a bypass actor on the
-caller's default-branch ruleset. Vite+ resolves from the caller's
-`package.json` pin. npm trusted publishing supports GitHub-hosted runners only.
-
-Inputs, all optional: `runner`, `ref`, `node-version-file`,
-`semantic-version`, `extra-plugins` (newline-separated, exact versions),
-`build-command` and `working-directory` for packages that do not build in
-`prepack`.
+The default plugins write `package.json` back to `main` as `putio-ci[bot]`, so
+that App stays a bypass actor on the caller's default-branch ruleset. npm
+trusted publishing supports GitHub-hosted runners only.
 
 ```yaml
 release:
@@ -86,37 +68,20 @@ jobs:
         uses: putdotio/.github/.github/actions/scan@<commit> # vX.Y.Z
 ```
 
-It scans on `push` and `workflow_dispatch` and passes through every other
-event, pull requests included, so the caller's `verify` workflow needs both
-triggers. A concurrency group keeps one pending run and cancels it when a newer
-run arrives, so pull-request runs share a group per ref and every other run
-gets its own; a shared push group would cancel a queued push run and leave its
-range unscanned. `!cancelled()` keeps the scan running after an earlier step
-fails, so every pushed range is scanned. A finding fails the pushed commit's
-`verify` run, and GitHub's failed-run email is the notification.
+It scans only on `push` and `workflow_dispatch`, so the caller's `verify`
+workflow needs both triggers. Keep the per-run concurrency group: a shared push
+group cancels a queued push run and leaves its range unscanned.
 
-The per-run group no longer serializes release, publish, or deploy jobs in the
-same workflow, so each takes a job-level `release-${{ github.repository }}-main`
-group with `cancel-in-progress: false` and `queue: max` and checks out
-`github.sha`, as [`frontend-release-npm.yml`](#frontend-release-npmyml) does.
-Without `queue: max`, an older release whose verify finishes late replaces a
-newer pending one and then skips because `main` has moved on, leaving the newer
-commits unreleased until the next push.
+That group no longer serializes release, publish, or deploy jobs in the same
+workflow. Give each a job-level `release-${{ github.repository }}-main` group
+with `cancel-in-progress: false` and `queue: max`, and check out `github.sha`,
+as [`frontend-release-npm.yml`](#frontend-release-npmyml) does. Without
+`queue: max`, a late older release replaces a newer pending one, then skips
+because `main` moved on.
 
-- Gitleaks scans the pushed range of private repositories. Public repositories
-  rely on GitHub secret scanning and push protection; `gitleaks: true` scans
-  them too.
-- Actionlint and Zizmor run when the range changes `.github/`, action
-  metadata, Zizmor configuration, or ShellCheck configuration. `zizmor-args`
-  adds arguments for documented needs, such as `--no-online-audits`. A
-  repository on non-GitHub runner labels lists them in
+- A repository on non-GitHub runner labels lists them in
   `.github/actionlint.yaml`.
-- Manual dispatch, a new branch, or a previous head that is not an ancestor
-  scans full history and always lints. Dispatch once after a scanner upgrade.
-- The default shallow checkout with `persist-credentials: false` is enough:
-  the action deepens it with `token` (default: the job token, which needs
-  `contents: read`) until the previous head resolves. Zizmor's online audits
-  use the same token.
+- Dispatch once after a scanner upgrade; a dispatch scans full history.
 
 ## actions/links
 
@@ -128,18 +93,12 @@ existing `verify` job on every event:
 - uses: putdotio/.github/.github/actions/links@<commit> # vX.Y.Z
 ```
 
-It runs offline with no network, so a result depends only on the commit; web
-links are not checked. Root-relative links resolve from the repository root.
-Untracked files and `node_modules/`, `vendor/`, `third_party/`, `Pods/`, and
-`Carthage/` are skipped; mark other vendored paths `linguist-vendored` in
-`.gitattributes`. A root `.lycheeignore` or `lychee.toml` adds exceptions.
-lychee is pinned like the scanners ([Pinned versions](#pinned-versions)).
+It runs offline, so web links are not checked. Mark vendored paths
+`linguist-vendored` in `.gitattributes`; a root `.lycheeignore` or
+`lychee.toml` adds exceptions.
 
-Both are steps rather than workflows because a separate job pays its own
-runner start and checkout for seconds of work, and a pull-request scan repeats
-the push scan every merge gets. Public repositories already block
-provider-pattern secrets at push time, so Gitleaks scans private ones by
-default. The reasoning and its sources are in gh-setup's
+Both are steps rather than workflows: a separate job pays its own runner start
+and checkout for seconds of work. The reasoning is in gh-setup's
 [security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
 and
 [runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
@@ -168,40 +127,18 @@ steps:
       tag-pattern: apple-tv-v* # release tags
 ```
 
-- Hand-written `notes` pass through, and Claude does not run.
-- The base build is `base`, or the newest tag matching `tag-pattern` below
-  the build commit.
-- A range with no `feat`, `fix`, or `perf` commit outside the `deps`, `ci`,
-  `docs`, `test`, and `build` scopes skips Claude.
-- Claude can read files and run `git log`, `git show`, `git diff`, and
-  `gh pr view`; nothing else.
-- A Claude failure, an empty list, or a missing base build gives `fallback`;
-  a beta never waits on Claude.
-- Bullets past `max-length` are dropped; set `500` for Google Play.
-- `source` says whether the notes are `manual`, `claude`, or `fallback`.
+A Claude failure, an empty list, or a missing base build gives `fallback`; a
+beta never waits on Claude. Set `max-length: 500` for Google Play.
 
-The action authenticates through workload identity federation: it exchanges
-the job's GitHub OIDC token, so no key is stored. Its defaults name put.io's
-Anthropic rule, which trusts `main` of `putdotio` repositories, plus the
-organization, service account, and workspace; none of them is a secret, and
-GitHub Free hides organization variables from private repositories, so they
-live here. `anthropic-api-key` takes precedence over federation when set.
+The action authenticates through workload identity federation, so no key is
+stored. Its federation IDs are input defaults, not organization variables:
+none is a secret, and GitHub Free hides organization variables from private
+repositories.
 
 ## Pinned versions
 
-Each tool runs at one version on every runner. Linux runners pull its image
-by digest. macOS runners download its release archive for the runner's
-architecture and check the archive's sha256 before running it. `mise.toml`
-pins the Actionlint and Zizmor that `mise run verify` runs locally and in CI.
-
-| Tool       | Pins                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------- |
-| Gitleaks   | [`actions/scan`](.github/actions/scan/action.yml)                                                       |
-| Actionlint | [`actions/scan`](.github/actions/scan/action.yml), [`mise.toml`](mise.toml)                             |
-| ShellCheck | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles |
-| pyflakes   | [`actions/scan`](.github/actions/scan/action.yml) on macOS, at the release the Actionlint image bundles |
-| Zizmor     | [`actions/scan`](.github/actions/scan/action.yml), [`mise.toml`](mise.toml)                             |
-| lychee     | [`actions/links`](.github/actions/links/action.yml)                                                     |
+Each scanner and linter runs at one pinned version on every runner: an image
+digest on Linux, a sha256-checked release archive on macOS.
 
 Dependabot updates none of them
 ([caveats](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories#github-actions)),
@@ -214,8 +151,10 @@ pyflakes publishes no release archives, so its pin is the commit its tag names
 
 ## Verify
 
-After `pnpm install`, `mise run verify` checks that each tool's pins agree,
-lints and audits the workflows and actions, and checks Markdown formatting
-with oxfmt; `pnpm exec oxfmt '**/*.md'`
-fixes findings. CI runs it and both actions from the same commit
-([`verify.yml`](.github/workflows/verify.yml)).
+```bash
+pnpm install
+mise run verify
+```
+
+`pnpm exec oxfmt '**/*.md'` fixes Markdown formatting. CI runs the same task
+and both actions ([`verify.yml`](.github/workflows/verify.yml)).
