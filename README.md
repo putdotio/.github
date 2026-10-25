@@ -30,7 +30,7 @@ policy. The Renovate app runs only where a repository commits a config:
 
 Vite+ repositories with explicit Vitest or `@vitest/*` pins extend
 `github>putdotio/.github:renovate-vite-plus` instead. It derives component
-versions from Vite+ manifests. Standalone Vitest keeps the base preset.
+versions from the shared [Vite+ mapping](https://github.com/uinaf/.github/blob/main/renovate-vite-plus-versions.json). Standalone Vitest keeps the base preset.
 
 ## frontend-release-npm.yml
 
