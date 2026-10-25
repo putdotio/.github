@@ -34,6 +34,8 @@ Renovate once every check on the PR passes; majors wait for approval on the
 Dependency Dashboard issue. `vite-plus`, `vitest`, and `@vitest/*` move in
 their own PR, since vite-plus pins an exact vitest. That PR takes the latest
 of every member at once and merges only after all of them clear release age.
+`effect` and `@effect/*` move the same way in one `effect` PR, since every
+member peers on the same `effect` version.
 
 ## frontend-release-npm.yml
 
