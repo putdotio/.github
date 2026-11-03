@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "put.io frontend Renovate policy: daily, three-day release age, patch and minor grouped and automerged after checks, majors behind dashboard approval, digest pinning.",
+  "description": "put.io frontend Renovate policy: daily, one-day release age matching pnpm's default, patch and minor grouped and automerged after checks, majors behind dashboard approval, digest pinning.",
   "extends": [
     "config:recommended",
     ":semanticCommitTypeAll(deps)",
@@ -10,7 +10,7 @@
   ],
   "timezone": "Europe/Istanbul",
   "schedule": ["* 0-5 * * *"],
-  "minimumReleaseAge": "3 days",
+  "minimumReleaseAge": "1 day",
   "internalChecksFilter": "strict",
   "dependencyDashboard": true,
   "prConcurrentLimit": 10,
@@ -44,34 +44,25 @@
       "enabled": false
     },
     {
-      "description": "Container images track upstream on a one-day gate: they are digest-pinned and every bump passes repository checks before it merges, so the three-day window mostly holds back fixes on daily-shipping images",
-      "matchDatasources": ["docker"],
-      "minimumReleaseAge": "1 day"
-    },
-    {
-      "description": "Actions are pinned to a commit digest; one day lets a newly published release settle before the pin moves",
-      "matchManagers": ["github-actions"],
-      "minimumReleaseAge": "1 day"
-    },
-    {
-      "description": "Runtime versions move as one PR across managers: the .python-version or node-version pin, the requires-python range, and the image tag fail checks when any one of them moves alone. One three-day gate for every member, after the one-day image and Actions rules, so the group never opens with only the members that aged first",
+      "description": "Runtime versions move as one PR across managers: the .python-version or node-version pin, the requires-python range, and the image tag fail checks when any one of them moves alone.",
       "matchDepNames": ["python", "node"],
       "matchUpdateTypes": ["patch", "minor", "major"],
-      "groupName": "{{depName}} runtime",
-      "minimumReleaseAge": "3 days"
+      "groupName": "{{depName}} runtime"
     },
     {
-      "description": "Keep Vite+ and its Vite core together. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
+      "description": "Keep Vite+ and its Vite core together, and open the PR only once every member has aged, so pnpm's release-age check never fails it. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
       "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"],
       "groupName": "vite-plus toolchain",
       "internalChecksFilter": "none",
+      "prCreation": "not-pending",
       "separateMajorMinor": false
     },
     {
-      "description": "Update Effect and its packages together without selecting partially aged releases. Major updates still require approval.",
+      "description": "Update Effect and its packages together without selecting partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it. Major updates still require approval.",
       "matchPackageNames": ["effect", "@effect/*"],
       "groupName": "effect",
       "internalChecksFilter": "none",
+      "prCreation": "not-pending",
       "separateMajorMinor": false
     },
     {
