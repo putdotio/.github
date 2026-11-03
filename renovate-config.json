@@ -50,19 +50,21 @@
       "groupName": "{{depName}} runtime"
     },
     {
-      "description": "Keep Vite+ and its Vite core together, and open the PR only once every member has aged, so pnpm's release-age check never fails it. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
+      "description": "Keep Vite+ and its Vite core together, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
       "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"],
       "groupName": "vite-plus toolchain",
       "internalChecksFilter": "none",
       "prCreation": "not-pending",
+      "internalChecksAsSuccess": true,
       "separateMajorMinor": false
     },
     {
-      "description": "Update Effect and its packages together without selecting partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it. Major updates still require approval.",
+      "description": "Update Effect and its packages together without selecting partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Major updates still require approval.",
       "matchPackageNames": ["effect", "@effect/*"],
       "groupName": "effect",
       "internalChecksFilter": "none",
       "prCreation": "not-pending",
+      "internalChecksAsSuccess": true,
       "separateMajorMinor": false
     },
     {
