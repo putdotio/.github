@@ -59,8 +59,15 @@
       "separateMajorMinor": false
     },
     {
-      "description": "Update Effect and its packages together without selecting partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Major updates still require approval.",
-      "matchPackageNames": ["effect", "@effect/*"],
+      "description": "Update Effect, its packages, and the frameworks pinned to one Effect version (foldkit, alchemy) together, since any one alone loads a second Effect; select no partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Major updates still require approval.",
+      "matchPackageNames": [
+        "effect",
+        "@effect/*",
+        "foldkit",
+        "@foldkit/*",
+        "alchemy",
+        "@alchemy.run/*"
+      ],
       "groupName": "effect",
       "internalChecksFilter": "none",
       "prCreation": "not-pending",
