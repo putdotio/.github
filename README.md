@@ -76,7 +76,7 @@ It scans only on `push` and `workflow_dispatch`, so the caller's `verify`
 workflow needs both triggers. Keep the per-run concurrency group: a shared push
 group cancels a queued push run and leaves its range unscanned.
 
-That group no longer serializes release, publish, or deploy jobs in the same
+That group does not serialize release, publish, or deploy jobs in the same
 workflow. Give each a job-level `release-${{ github.repository }}-main` group
 with `cancel-in-progress: false` and `queue: max`, and check out `github.sha`,
 as [`frontend-release-npm.yml`](#frontend-release-npmyml) does. Without
@@ -100,12 +100,6 @@ existing `verify` job on every event:
 It runs offline, so web links are not checked. Mark vendored paths
 `linguist-vendored` in `.gitattributes`; a root `.lycheeignore` or
 `lychee.toml` adds exceptions.
-
-Both are steps rather than workflows: a separate job pays its own runner start
-and checkout for seconds of work. The reasoning is in gh-setup's
-[security baseline](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/security-baseline.md)
-and
-[runner cost](https://github.com/uinaf/ffss/blob/main/skills/gh-setup/references/runner-cost.md).
 
 ## actions/beta-notes
 
@@ -135,7 +129,7 @@ A Claude failure, an empty list, or a missing base build gives `fallback`; a
 beta never waits on Claude. Set `max-length: 500` for Google Play.
 
 The action authenticates through workload identity federation, so no key is
-stored. Its federation IDs are input defaults, not organization variables:
+stored. Its federation IDs are input defaults:
 none is a secret, and GitHub Free hides organization variables from private
 repositories.
 
