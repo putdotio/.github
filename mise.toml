@@ -1,6 +1,6 @@
 [tools]
 actionlint = "1.7.12"
-"pipx:zizmor" = "1.32.0"
+"pipx:zizmor" = "1.33.1"
 
 [tasks.verify-pins]
 description = "Fail when one tool's pins name different versions"
