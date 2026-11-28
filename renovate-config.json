@@ -1,15 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "put.io frontend Renovate policy: the uinaf shared policy, with Renovate merging through its own automerge and putdotio/.github exempt from release age.",
+  "description": "put.io frontend Renovate policy: the uinaf shared policy, with Renovate merging through its own automerge because put.io repos lack GitHub auto-merge and branch protection.",
   "extends": ["github>uinaf/.github:renovate-config"],
-  "platformAutomerge": false,
-  "packageRules": [
-    {
-      "description": "First-party shared workflows and actions pin like any action; a release age adds nothing for a repository we own",
-      "matchManagers": ["github-actions"],
-      "matchPackageNames": ["putdotio/.github"],
-      "minimumReleaseAge": null,
-      "schedule": ["at any time"]
-    }
-  ]
+  "platformAutomerge": false
 }
