@@ -17,13 +17,14 @@ exit "$status"
 '''
 
 [tasks.verify]
-description = "Lint and audit the shared workflows and check Markdown formatting"
+description = "Lint and audit the shared workflows, validate the Renovate presets and check Markdown formatting"
 depends = ["verify-pins"]
-sources = [".github/**/*.yml", "**/*.md"]
+sources = [".github/**/*.yml", "**/*.md", "renovate*.json"]
 run = '''
 actionlint
 token="${GH_TOKEN:-$(gh auth token)}" || exit 1
 GH_TOKEN="$token" zizmor .github/workflows .github/actions
+pnpm exec renovate-config-validator --strict renovate-config.json renovate-vite-plus.json renovate.json
 pnpm exec oxfmt --check '**/*.md'
 git diff --check
 '''

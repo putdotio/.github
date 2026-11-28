@@ -2,6 +2,7 @@
   "private": true,
   "packageManager": "pnpm@12.23.0",
   "devDependencies": {
-    "oxfmt": "0.80.0"
+    "oxfmt": "0.80.0",
+    "renovate": "44.263.5"
   }
 }
