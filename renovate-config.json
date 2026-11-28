@@ -1,119 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "put.io frontend Renovate policy: daily, one-day release age matching pnpm's default, patch and minor grouped and automerged after checks, majors behind dashboard approval, digest pinning.",
-  "extends": [
-    "config:recommended",
-    ":semanticCommitTypeAll(deps)",
-    "docker:pinDigests",
-    ":semanticCommits",
-    "helpers:pinGitHubActionDigests"
-  ],
-  "timezone": "Europe/Istanbul",
-  "schedule": ["* 0-5 * * *"],
-  "minimumReleaseAge": "1 day",
-  "internalChecksFilter": "strict",
-  "dependencyDashboard": true,
-  "prConcurrentLimit": 10,
-  "labels": ["dependencies"],
+  "description": "put.io frontend Renovate policy: the uinaf shared policy, with Renovate merging through its own automerge and putdotio/.github exempt from release age.",
+  "extends": ["github>uinaf/.github:renovate-config"],
+  "platformAutomerge": false,
   "packageRules": [
-    {
-      "description": "Group patch and minor updates per manager; majors stay separate",
-      "matchUpdateTypes": ["patch", "minor", "pin"],
-      "groupName": "{{manager}} patch and minor"
-    },
-    {
-      "description": "Renovate merges grouped patch, minor, and pin updates itself once every check on the PR passes; majors and digest moves stay manual",
-      "matchUpdateTypes": ["patch", "minor", "pin", "pinDigest"],
-      "automerge": true,
-      "automergeType": "pr"
-    },
-    {
-      "description": "GitHub Actions use the ci commit prefix",
-      "matchManagers": ["github-actions"],
-      "semanticCommitType": "ci"
-    },
-    {
-      "description": "OpenTofu registry for providers and modules",
-      "matchDatasources": ["terraform-provider", "terraform-module"],
-      "registryUrls": ["https://registry.opentofu.org"]
-    },
-    {
-      "description": "required_version tracks OpenTofu releases, not Terraform",
-      "matchManagers": ["terraform"],
-      "matchDepNames": ["hashicorp/terraform"],
-      "enabled": false
-    },
-    {
-      "description": "Runtime versions move as one PR across managers: the .python-version or node-version pin, the requires-python range, and the image tag fail checks when any one of them moves alone.",
-      "matchDepNames": ["python", "node"],
-      "matchUpdateTypes": ["patch", "minor", "major"],
-      "groupName": "{{depName}} runtime"
-    },
-    {
-      "description": "Keep Vite+ and its Vite core together, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Consumers with explicit Vitest pins use the renovate-vite-plus preset.",
-      "matchPackageNames": ["vite-plus", "@voidzero-dev/vite-plus-core"],
-      "groupName": "vite-plus toolchain",
-      "internalChecksFilter": "none",
-      "prCreation": "not-pending",
-      "internalChecksAsSuccess": true,
-      "separateMajorMinor": false
-    },
-    {
-      "description": "Update Effect, its packages, and the frameworks pinned to one Effect version (foldkit, alchemy) together, since any one alone loads a second Effect; select no partially aged releases, and open the PR only once every member has aged, so pnpm's release-age check never fails it; the passed release-age check counts as success on branches whose CI runs only on PRs. Major updates still require approval.",
-      "matchPackageNames": [
-        "effect",
-        "@effect/*",
-        "foldkit",
-        "@foldkit/*",
-        "alchemy",
-        "@alchemy.run/*"
-      ],
-      "groupName": "effect",
-      "internalChecksFilter": "none",
-      "prCreation": "not-pending",
-      "internalChecksAsSuccess": true,
-      "separateMajorMinor": false
-    },
-    {
-      "description": "Pin Actions and images by digest on the initial run without waiting for release age",
-      "matchUpdateTypes": ["pin", "pinDigest"],
-      "minimumReleaseAge": null,
-      "schedule": ["at any time"]
-    },
     {
       "description": "First-party shared workflows and actions pin like any action; a release age adds nothing for a repository we own",
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["putdotio/.github"],
       "minimumReleaseAge": null,
       "schedule": ["at any time"]
-    },
-    {
-      "description": "Digest moves stay manual in their own group and bypass release age because some datasources provide no timestamps",
-      "matchUpdateTypes": ["digest"],
-      "groupName": "{{manager}} digests",
-      "automerge": false,
-      "minimumReleaseAge": null
-    },
-    {
-      "description": "Majors open only after approval on the Dependency Dashboard and always merge by hand",
-      "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true,
-      "automerge": false
     }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Annotated YAML version variables: # renovate: datasource=X depName=Y [versioning=Z] [extractVersion=RE]",
-      "managerFilePatterns": ["/\\.ya?ml$/"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>[^\\s]+?)(?: versioning=(?<versioning>[a-z-]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?\\s+[\\w-]+:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
-      ],
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    }
-  ],
-  "semanticCommitScope": null,
-  "automerge": false,
-  "platformAutomerge": false,
-  "automergeStrategy": "squash"
+  ]
 }
